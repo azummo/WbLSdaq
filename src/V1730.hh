@@ -48,7 +48,7 @@ typedef struct {
     //REG_PRE_GATE
     uint32_t gate_offset; // 8 bit
     
-    //REG_DPP_TRG_THRESHOLD
+    //REG_TRIGGER_THRESHOLD
     uint32_t trg_threshold; // 12 bit
     
     //REG_BASELINE_THRESHOLD
@@ -200,6 +200,7 @@ class V1730 : public Digitizer {
         static constexpr uint32_t REG_BASELINE_THRESHOLD = 0x1064; // can't find it, keep it
         static constexpr uint32_t REG_SHAPED_TRIGGER_WIDTH = 0x1070; // good
         static constexpr uint32_t REG_TRIGGER_HOLDOFF = 0x1074; // can't find it, keep it    
+        static constexpr uint32_t REG_TRIGGER_THRESHOLD = 0x1080; // good
         static constexpr uint32_t REG_TRIGGER_CTRL = 0x1084; // good
         static constexpr uint32_t REG_DC_OFFSET = 0x1098; // good
         static constexpr uint32_t REG_CHANNEL_TEMP = 0x10A8; // good

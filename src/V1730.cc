@@ -129,8 +129,8 @@ void V1730Settings::validate() { //FIXME validate bit fields too
             if (groups[ch/2].ev_per_buffer > 1023) throw runtime_error("Number of events per channel buffer exceeds 1023 (gr " + to_string(ch/2) + ")");
         }
         if (chans[ch].pre_trigger > 2044) throw runtime_error("Pre trigger samples exceeds 2044 (ch " + to_string(ch) + ")");
-        if (chans[ch].short_gate > 4095) throw runtime_error("Short gate samples exceeds 4095 (ch " + to_string(ch) + ")");
-        if (chans[ch].long_gate > 4095) throw runtime_error("Long gate samples exceeds 4095 (ch " + to_string(ch) + ")");
+//      if (chans[ch].short_gate > 4095) throw runtime_error("Short gate samples exceeds 4095 (ch " + to_string(ch) + ")");
+//      if (chans[ch].long_gate > 4095) throw runtime_error("Long gate samples exceeds 4095 (ch " + to_string(ch) + ")");
         if (chans[ch].gate_offset > 255) throw runtime_error("Gate offset samples exceeds 255 (ch " + to_string(ch) + ")");
         if (chans[ch].pre_trigger < chans[ch].gate_offset + 19) throw runtime_error("Gate offset and pre_trigger relationship violated (ch " + to_string(ch) + ")");
         if (chans[ch].trg_threshold > 4095) throw runtime_error("Trigger threshold exceeds 4095 (ch " + to_string(ch) + ")");
@@ -247,7 +247,7 @@ bool V1730::program(DigitizerSettings &_settings) {
             data = settings.groups[ch/2].valid_mask
                  | (settings.groups[ch/2].valid_mode << 8)
                  | (settings.groups[ch/2].valid_majority << 10);
-            write32(REG_LOCAL_VALIDATION+(ch/2*4),data);
+            //write32(REG_LOCAL_VALIDATION+(ch/2*4),data);
         } else {
             write32(REG_RECORD_LENGTH|(ch<<8),settings.groups[ch/2].record_length/8);
         }
@@ -262,6 +262,7 @@ bool V1730::program(DigitizerSettings &_settings) {
         //write32(REG_LONG_GATE|(ch<<8),settings.chans[ch].long_gate);
         //write32(REG_PRE_GATE|(ch<<8),settings.chans[ch].gate_offset);
         //write32(REG_DPP_TRG_THRESHOLD|(ch<<8),settings.chans[ch].trg_threshold);
+        write32(REG_TRIGGER_THRESHOLD|(ch<<8),settings.chans[ch].trg_threshold);
         write32(REG_BASELINE_THRESHOLD|(ch<<8),settings.chans[ch].fixed_baseline);
         write32(REG_SHAPED_TRIGGER_WIDTH|(ch<<8),settings.chans[ch].shaped_trigger_width);
         write32(REG_TRIGGER_HOLDOFF|(ch<<8),settings.chans[ch].trigger_holdoff/4);
@@ -272,9 +273,9 @@ bool V1730::program(DigitizerSettings &_settings) {
         //     | (settings.chans[ch].self_trigger << 24);
         //write32(REG_DPP_CTRL|(ch<<8),data);
         data = (settings.groups[ch/2].local_logic<<0) 
-             | (1<<2) // enable request logic
-             | (settings.groups[ch/2].valid_logic<<4)
-             | (1<<6); // enable valid logic
+             | (1<<2); // enable request logic
+//           | (settings.groups[ch/2].valid_logic<<4)
+//           | (1<<6); // enable valid logic
         write32(REG_TRIGGER_CTRL|(ch<<8),data);
         write32(REG_DC_OFFSET|(ch<<8),settings.chans[ch].dc_offset);
         

@@ -29,7 +29,8 @@
 
 #include "RunDB.hh"
 #include "VMEBridge.hh"
-//#include "V1730_dpppsd.hh"
+#include "V1730_dummy.hh"
+#include "V1730_dpppsd.hh"
 #include "V1730.hh"
 #include "V1742.hh"
 #include "V65XX.hh"
@@ -431,6 +432,36 @@ int main(int argc, char **argv) {
     vector<Digitizer*> digitizers;
     vector<Buffer*> buffers;
     vector<Decoder*> decoders;
+
+    vector<RunTable> v1730dummys = db.getGroup("V1730dummy");
+    for (size_t i = 0; i < v1730dummys.size(); i++) {
+        RunTable &tbl = v1730dummys[i];
+        cout << "* V1730dummy - " << tbl.getIndex() << endl;
+        V1730_dummySettings *stngs = new V1730_dummySettings(tbl,db);
+        settings.push_back(stngs);
+        digitizers.push_back(new V1730_dummy(bridge,tbl["base_address"].cast<int>()));
+        ((V1730_dummy*)digitizers.back())->stopAcquisition();
+        ((V1730_dummy*)digitizers.back())->calib();
+        buffers.push_back(new Buffer(tbl["buffer_size"].cast<int>()*1024*1024));
+        if (!digitizers.back()->program(*stngs)) return -1;
+        // decoders need settings after programming
+        decoders.push_back(new V1730_dummyDecoder(eventBufferSize,*stngs));
+    }
+
+    vector<RunTable> v1730dpps = db.getGroup("V1730dpp");
+    for (size_t i = 0; i < v1730dpps.size(); i++) {
+        RunTable &tbl = v1730dpps[i];
+        cout << "* V1730dpp - " << tbl.getIndex() << endl;
+        V1730_DPPSettings *stngs = new V1730_DPPSettings(tbl,db);
+        settings.push_back(stngs);
+        digitizers.push_back(new V1730_DPP(bridge,tbl["base_address"].cast<int>()));
+        ((V1730_DPP*)digitizers.back())->stopAcquisition();
+        ((V1730_DPP*)digitizers.back())->calib();
+        buffers.push_back(new Buffer(tbl["buffer_size"].cast<int>()*1024*1024));
+        if (!digitizers.back()->program(*stngs)) return -1;
+        // decoders need settings after programming
+        decoders.push_back(new V1730_DPPDecoder(eventBufferSize,*stngs));
+    }
     
     vector<RunTable> v1730s = db.getGroup("V1730");
     for (size_t i = 0; i < v1730s.size(); i++) {
