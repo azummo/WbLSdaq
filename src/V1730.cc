@@ -206,17 +206,9 @@ bool V1730::program(DigitizerSettings &_settings) {
     data = (0<<0) | (0<<4) | (0<<8) | (0<<12); // ignored for now
     write32(REG_LVDS_NEW_FEATURES,data);
 
-    data = (1 << 2) //individual trigger propagation
-         | (1 << 4) //reserved
-         | (1 << 8) //individual trigger (reserved)
-         | (settings.card.dual_trace << 11) 
-         | (settings.card.analog_probe << 12) 
-         | (settings.card.oscilloscope_mode << 16) 
-         | (1 << 17) //enable extras
-         | (1 << 18) //time stamp (reserved)
-         | (1 << 19) //charge record (reserved)
-         | (settings.card.digital_virt_probe_1 << 23)
-         | (settings.card.digital_virt_probe_2 << 26);
+    // TODO need to implement trigger polarity
+    data = (1 << 4);// reserved
+//       | (settings.trigger_polarity << 6); // self-trigger polarity
     write32(REG_CONFIG,data);
 
     //build masks while configuring channels
