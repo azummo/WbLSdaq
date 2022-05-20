@@ -36,36 +36,11 @@ typedef struct {
     //REG_DYNAMIC_RANGE
     uint32_t dynamic_range; // 1 bit
     
-    //REG_PRE_TRG
-    uint32_t pre_trigger; // 9* bit
-    
-    //REG_LONG_GATE
-    uint32_t long_gate; // 12 bit
-    
-    //REG_SHORT_GATE
-    uint32_t short_gate; // 12 bit
-    
-    //REG_PRE_GATE
-    uint32_t gate_offset; // 8 bit
-    
     //REG_TRIGGER_THRESHOLD
     uint32_t trg_threshold; // 12 bit
     
-    //REG_BASELINE_THRESHOLD
-    uint32_t fixed_baseline; // 12 bit
-    
     //REG_SHAPED_TRIGGER_WIDTH
     uint32_t shaped_trigger_width; // 10 bit
-    
-    //REG_TRIGGER_HOLDOFF
-    uint32_t trigger_holdoff; // 10* bit
-    
-    //REG_DPP_CTRL
-    uint32_t charge_sensitivity; // 3 bit (see docs)
-    uint32_t pulse_polarity; // 1 bit (0->positive, 1->negative)
-    uint32_t trigger_config; // 2 bit (normal, coincidence, reserved, anticoincidence)
-    uint32_t baseline_mean; // 3 bit (fixed, 16, 64, 256, 1024)
-    uint32_t self_trigger; // 1 bit (0->enabled, 1->disabled)
     
     //REG_DC_OFFSET
     uint32_t dc_offset; // 16 bit (-1V to 1V)
@@ -76,7 +51,6 @@ typedef struct {
 
     //REG_LOCAL_TRIGGER_MANAGEMENT
     uint32_t local_logic; // 2 bit [AND, EVEN, ODD, OR]
-    uint32_t valid_logic; // 2 bit [AND, MOTHER, COUPLE, OR]
     
     //REG_GLOBAL_TRIGGER_MASK
     uint32_t global_trigger; // 1 bit
@@ -84,45 +58,41 @@ typedef struct {
     //REG_TRIGGER_OUT_MASK
     uint32_t trg_out; // 1 bit
     
-    //REG_LOCAL_VALIDATION
-    uint32_t valid_mask; // 8 bit
-    uint32_t valid_mode; // 2 bit (or, and, majority)
-    uint32_t valid_majority; // 3 bit
-    
-    //REG_RECORD_LENGTH
-    uint32_t record_length; // 16* bit
-    
     //REG_NEV_AGGREGATE
     uint32_t ev_per_buffer; // 10 bit
 
 } V1730_group_config;
 
 typedef struct {
-
     //REG_CONFIG
-    uint32_t dual_trace; // 1 bit
-    uint32_t analog_probe; // 2 bit (see docs)
-    uint32_t oscilloscope_mode; // 1 bit
-    uint32_t digital_virt_probe_1; // 3 bit (see docs)
-    uint32_t digital_virt_probe_2; // 3 bit (see docs)
-    
+    uint32_t trigger_overlap; // 1 bit
+    uint32_t test_pattern; // 1 bit
+    uint32_t trigger_polarity; // 1 bit
+
     //REG_GLOBAL_TRIGGER_MASK
     uint32_t coincidence_window; // 3 bit
     uint32_t global_majority_level; // 3 bit
     uint32_t external_global_trigger; // 1 bit
     uint32_t software_global_trigger; // 1 bit
-    
+
     //REG_TRIGGER_OUT_MASK
     uint32_t out_logic; // 2 bit (OR,AND,MAJORITY)
     uint32_t out_majority_level; // 3 bit
     uint32_t external_trg_out; // 1 bit
     uint32_t software_trg_out; // 1 bit
-    
+
+    //REG_CUSTOM_SIZE
+    uint32_t record_length;
+    uint32_t custom_size;
+
+    //REG_POST_TRG
+    uint32_t post_trigger;
+
     //REG_BUFF_ORG
     uint32_t buff_org;
-    
+
     //REG_READOUT_BLT_AGGREGATE_NUMBER
-    uint16_t max_board_agg_blt;
+    uint16_t max_board_evt_blt;
     
 } V1730_card_config;
 
@@ -142,17 +112,17 @@ class V1730Settings : public DigitizerSettings {
         inline bool getEnabled(uint32_t ch) {
             return chans[ch].enabled;
         }
+
+        inline uint32_t getRecordLength() {
+            return card.record_length;
+        }
         
-        inline uint32_t getRecordLength(uint32_t ch) {
-            return groups[ch/2].record_length;
+        inline uint32_t getCustomSize() {
+            return card.custom_size;
         }
         
         inline uint32_t getDCOffset(uint32_t ch) {
             return chans[ch].dc_offset;
-        }
-        
-        inline uint32_t getPreSamples(uint32_t ch) {
-            return chans[ch].pre_trigger;
         }
         
         inline uint32_t getThreshold(uint32_t ch) {
@@ -191,13 +161,11 @@ class V1730 : public Digitizer {
         static constexpr uint32_t REG_SOFTWARE_RESET = 0xEF24; // good
         static constexpr uint32_t REG_SOFTWARE_CLEAR = 0xEF28; // good
         static constexpr uint32_t REG_BOARD_CONFIGURATION_RELOAD = 0xEF34; // good
+        static constexpr uint32_t REG_POST_TRG = 0x8114;
+        static constexpr uint32_t REG_CUSTOM_SIZE = 0x8020;
 
         //per channel, or with = 0x0n00
-        static constexpr uint32_t REG_RECORD_LENGTH = 0x1020; // can't find it, keep it
         static constexpr uint32_t REG_DYNAMIC_RANGE = 0x1028; // was 0x1024
-        static constexpr uint32_t REG_NEV_AGGREGATE = 0x1034;  // can't find it, keep it
-        static constexpr uint32_t REG_PRE_TRG = 0x1038; // can't find it, keep it
-        static constexpr uint32_t REG_BASELINE_THRESHOLD = 0x1064; // can't find it, keep it
         static constexpr uint32_t REG_SHAPED_TRIGGER_WIDTH = 0x1070; // good
         static constexpr uint32_t REG_TRIGGER_HOLDOFF = 0x1074; // can't find it, keep it    
         static constexpr uint32_t REG_TRIGGER_THRESHOLD = 0x1080; // good
@@ -205,9 +173,6 @@ class V1730 : public Digitizer {
         static constexpr uint32_t REG_DC_OFFSET = 0x1098; // good
         static constexpr uint32_t REG_CHANNEL_TEMP = 0x10A8; // good
         
-        //per couple, add 4*couple 
-        static constexpr uint32_t REG_LOCAL_VALIDATION = 0x8180; // can't find it, keep it 
-
         //acquisition 
         static constexpr uint32_t REG_ACQUISITION_CONTROL = 0x8100; // good
         static constexpr uint32_t REG_ACQUISITION_STATUS = 0x8104; // good
@@ -221,7 +186,7 @@ class V1730 : public Digitizer {
         static constexpr uint32_t REG_READOUT_CONTROL = 0xEF00; // good
         static constexpr uint32_t REG_READOUT_STATUS = 0xEF04; // good
         static constexpr uint32_t REG_VME_ADDRESS_RELOCATION = 0xEF10; // good
-        static constexpr uint32_t REG_READOUT_BLT_AGGREGATE_NUMBER = 0xEF1C; // good
+        static constexpr uint32_t REG_READOUT_BLT_EVENT_NUMBER = 0xEF1C; // good
         
         V1730(VMEBridge &bridge, uint32_t baseaddr);
         

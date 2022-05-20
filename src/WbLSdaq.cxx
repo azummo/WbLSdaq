@@ -29,6 +29,7 @@
 
 #include "RunDB.hh"
 #include "VMEBridge.hh"
+#include "V1730_wavedump.hh"
 #include "V1730_dummy.hh"
 #include "V1730_dpppsd.hh"
 #include "V1730.hh"
@@ -432,6 +433,21 @@ int main(int argc, char **argv) {
     vector<Digitizer*> digitizers;
     vector<Buffer*> buffers;
     vector<Decoder*> decoders;
+
+    vector<RunTable> v1730wavedumps = db.getGroup("V1730wavedump");
+    for (size_t i = 0; i < v1730wavedumps.size(); i++) {
+        RunTable &tbl = v1730wavedumps[i];
+        cout << "* V1730wavedump - " << tbl.getIndex() << endl;
+        V1730_wavedumpSettings *stngs = new V1730_wavedumpSettings(tbl,db);
+        settings.push_back(stngs);
+        digitizers.push_back(new V1730_wavedump(bridge,tbl["base_address"].cast<int>()));
+        ((V1730_wavedump*)digitizers.back())->stopAcquisition();
+        ((V1730_wavedump*)digitizers.back())->calib();
+        buffers.push_back(new Buffer(tbl["buffer_size"].cast<int>()*1024*1024));
+        if (!digitizers.back()->program(*stngs)) return -1;
+        // decoders need settings after programming
+        decoders.push_back(new V1730_wavedumpDecoder(eventBufferSize,*stngs));
+    }
 
     vector<RunTable> v1730dummys = db.getGroup("V1730dummy");
     for (size_t i = 0; i < v1730dummys.size(); i++) {

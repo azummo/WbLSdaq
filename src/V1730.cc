@@ -23,13 +23,12 @@
 
 using namespace std;
 
+// FIXME this needs to be checked for consistency with std firmware
 V1730Settings::V1730Settings() : DigitizerSettings("") {
     //These are "do nothing" defaults
-    card.dual_trace = 0; // 1 bit
-    card.analog_probe = 0; // 2 bit (see docs)
-    card.oscilloscope_mode = 1; // 1 bit
-    card.digital_virt_probe_1 = 0; // 3 bit (see docs)
-    card.digital_virt_probe_2 = 0; // 3 bit (see docs)
+    card.trigger_overlap = 0; // 1 bit
+    card.test_pattern = 0; // 1 bit
+    card.trigger_polarity = 1; // 1 bit
     card.coincidence_window = 1; // 3 bit
     card.global_majority_level = 0; // 3 bit
     card.external_global_trigger = 0; // 1 bit
@@ -38,7 +37,7 @@ V1730Settings::V1730Settings() : DigitizerSettings("") {
     card.out_majority_level = 0; // 3 bit
     card.external_trg_out = 0; // 1 bit
     card.software_trg_out = 0; // 1 bit
-    card.max_board_agg_blt = 5;
+    card.max_board_evt_blt = 5;
     
     for (uint32_t ch = 0; ch < 16; ch++) {
         chanDefaults(ch);
@@ -46,13 +45,27 @@ V1730Settings::V1730Settings() : DigitizerSettings("") {
     
 }
 
+// FIXME this needs to be checked for consistency with std firmware
 V1730Settings::V1730Settings(RunTable &digitizer, RunDB &db) : DigitizerSettings(digitizer.getIndex()){
-    
-    card.dual_trace = 0; // 1 bit
-    card.analog_probe = 0; // 2 bit (see docs)
-    card.oscilloscope_mode = 1; // 1 bit
-    card.digital_virt_probe_1 = 0; // 3 bit (see docs)
-    card.digital_virt_probe_2 = 0; // 3 bit (see docs)
+    // board config
+    card.trigger_overlap = digitizer["trigger_overlap"].cast<int>(); // 1 bit
+    card.test_pattern = digitizer["test_pattern"].cast<int>(); // 1 bit
+    card.trigger_polarity = digitizer["trigger_polarity"].cast<int>(); // 1 bit
+
+    // record length, expressed as custom size on-board
+    card.record_length = digitizer["record_length"].cast<int>(); // # of samples
+    card.custom_size = card.record_length / 10; // see docs
+
+    card.post_trigger = digitizer["post_trigger"].cast<int>(); // int
+
+    const uint32_t total_locations = 640000;
+    card.buff_org = 0xA;
+    // TODO potential bug here, in that 0xA corresponds to 625 != 640 samples
+    while (total_locations/(1 << card.buff_org) < card.record_length)
+        card.buff_org--;
+    if (card.buff_org > 0xA) card.buff_org = 0xA;
+    if (card.buff_org < 0x2) card.buff_org = 0x2;
+//  cout << "Largest buffer: " << largest_buffer << " loc\nDesired buffers: " << num_buffers << "\nProgrammed buffers: " << (1<<settings.card.buff_org) << endl;
     
     card.coincidence_window = digitizer["coincidence_window"].cast<int>(); // 3 bit
     card.global_majority_level = digitizer["global_majority_level"].cast<int>(); // 3 bit
@@ -62,8 +75,8 @@ V1730Settings::V1730Settings(RunTable &digitizer, RunDB &db) : DigitizerSettings
     card.out_majority_level = digitizer["trig_out_majority_level"].cast<int>(); // 3 bit
     card.external_trg_out = digitizer["external_trigger_out"].cast<bool>() ? 1 : 0; // 1 bit
     card.software_trg_out = digitizer["external_trigger_out"].cast<bool>() ? 1 : 0; // 1 bit
-    card.max_board_agg_blt = digitizer["aggregates_per_transfer"].cast<int>(); 
-    
+    card.max_board_evt_blt = digitizer["events_per_transfer"].cast<int>();
+
     for (int ch = 0; ch < 16; ch++) {
         if (ch%2 == 0) {
             string grname = "GR"+to_string(ch/2);
@@ -74,18 +87,8 @@ V1730Settings::V1730Settings(RunTable &digitizer, RunDB &db) : DigitizerSettings
                 RunTable group = db.getTable(grname,index);
                 
                 groups[ch/2].local_logic = group["local_logic"].cast<int>(); // 2 bit (see docs)
-                groups[ch/2].valid_logic = group["valid_logic"].cast<int>(); // 2 bit (see docs)
                 groups[ch/2].global_trigger = group["request_global_trigger"].cast<bool>() ? 1 : 0; // 1 bit
                 groups[ch/2].trg_out = group["request_trig_out"].cast<bool>() ? 1 : 0; // 1 bit
-                groups[ch/2].valid_mask = 0;
-                vector<bool> mask = group["validation_mask"].toVector<bool>();
-                for (size_t i = 0; i < mask.size(); i++) {
-                    groups[ch/2].valid_mask |= (mask[i] ? 1 : 0) << i;
-                }
-                groups[ch/2].valid_mode = group["validation_mode"].cast<int>(); // 2 bit
-                groups[ch/2].valid_majority = group["validation_majority_level"].cast<int>(); // 3 bit
-                groups[ch/2].record_length = group["record_length"].cast<int>(); // 16* bit
-                groups[ch/2].ev_per_buffer = group["events_per_buffer"].cast<int>(); // 10 bit
             
             }
         }
@@ -96,23 +99,13 @@ V1730Settings::V1730Settings(RunTable &digitizer, RunDB &db) : DigitizerSettings
             cout << "\t" << chname << endl;
             RunTable channel = db.getTable(chname,index);
     
-            chans[ch].fixed_baseline = 0; // 12 bit
-            
             chans[ch].enabled = channel["enabled"].cast<bool>() ? 1 : 0; //1 bit
-            chans[ch].dc_offset = round((-channel["dc_offset"].cast<double>()+1.0)/2.0*pow(2.0,16.0)); // 16 bit (-1V to 1V)
-            chans[ch].baseline_mean = channel["baseline_average"].cast<int>(); // 3 bit (fixed,16,64,256,1024)
-            chans[ch].pulse_polarity = channel["pulse_polarity"].cast<int>(); // 1 bit (0->positive, 1->negative)
+            // FIXME this needs to be tested
+//          chans[ch].dc_offset = round((-channel["dc_offset"].cast<double>()+1.0)/2.0*pow(2.0,16.0)); // 16 bit (-1V to 1V)
+            chans[ch].dc_offset = 0.0;
             chans[ch].trg_threshold =  channel["trigger_threshold"].cast<int>();// 12 bit
-            chans[ch].self_trigger = channel["self_trigger"].cast<bool>() ? 0 : 1; // 1 bit (0->enabled, 1->disabled)
-            chans[ch].pre_trigger = channel["pre_trigger"].cast<int>(); // 9* bit
-            chans[ch].gate_offset = channel["gate_offset"].cast<int>(); // 8 bit
-            chans[ch].long_gate = channel["long_gate"].cast<int>(); // 12 bit
-            chans[ch].short_gate = channel["short_gate"].cast<int>(); // 12 bit
-            chans[ch].charge_sensitivity = channel["charge_sensitivity"].cast<int>(); // 3 bit (see docs)
             chans[ch].shaped_trigger_width = channel["shaped_trigger_width"].cast<int>(); // 10 bit
-            chans[ch].trigger_holdoff = channel["trigger_holdoff"].cast<int>(); // 10* bit
-            chans[ch].trigger_config = channel["trigger_type"].cast<int>(); // 2 bit (see docs)
-	    chans[ch].dynamic_range = channel["dynamic_range"].cast<int>(); // 1 bit (see docs 0->2Vpp, 1->0.5Vpp)
+	        chans[ch].dynamic_range = channel["dynamic_range"].cast<int>(); // 1 bit (see docs 0->2Vpp, 1->0.5Vpp)
         }
     }
 }
@@ -121,22 +114,16 @@ V1730Settings::~V1730Settings() {
 
 }
         
+// FIXME need complete validation for implemented configuration
 void V1730Settings::validate() { //FIXME validate bit fields too
+    if ((card.record_length < 1) || (640000 < card.record_length)){
+        throw runtime_error("Record length must be between 1 and 640000 samples");
+    }
     for (int ch = 0; ch < 16; ch++) {
-        if (ch % 2 == 0) {
-            if (groups[ch/2].record_length > 65535) throw runtime_error("Number of samples exceeds 65535 (gr " + to_string(ch/2) + ")");
-            if (groups[ch/2].ev_per_buffer < 2) throw runtime_error("Number of events per channel buffer must be at least 2 (gr " + to_string(ch/2) + ")");
-            if (groups[ch/2].ev_per_buffer > 1023) throw runtime_error("Number of events per channel buffer exceeds 1023 (gr " + to_string(ch/2) + ")");
-        }
-        if (chans[ch].pre_trigger > 2044) throw runtime_error("Pre trigger samples exceeds 2044 (ch " + to_string(ch) + ")");
-//      if (chans[ch].short_gate > 4095) throw runtime_error("Short gate samples exceeds 4095 (ch " + to_string(ch) + ")");
-//      if (chans[ch].long_gate > 4095) throw runtime_error("Long gate samples exceeds 4095 (ch " + to_string(ch) + ")");
-        if (chans[ch].gate_offset > 255) throw runtime_error("Gate offset samples exceeds 255 (ch " + to_string(ch) + ")");
-        if (chans[ch].pre_trigger < chans[ch].gate_offset + 19) throw runtime_error("Gate offset and pre_trigger relationship violated (ch " + to_string(ch) + ")");
+//      FIXME adapt for post_trigger, which is global
+//      if (chans[ch].pre_trigger > 2044) throw runtime_error("Pre trigger samples exceeds 2044 (ch " + to_string(ch) + ")");
         if (chans[ch].trg_threshold > 4095) throw runtime_error("Trigger threshold exceeds 4095 (ch " + to_string(ch) + ")");
-        if (chans[ch].fixed_baseline > 4095) throw runtime_error("Fixed baseline exceeds 4095 (ch " + to_string(ch) + ")");
         if (chans[ch].shaped_trigger_width > 1023) throw runtime_error("Shaped trigger width exceeds 1023 (ch " + to_string(ch) + ")");
-        if (chans[ch].trigger_holdoff > 4092) throw runtime_error("Trigger holdoff width exceeds 4092 (ch " + to_string(ch) + ")");
         if (chans[ch].dc_offset > 65535) throw runtime_error("DC Offset cannot exceed 65535 (ch " + to_string(ch) + ")");
     }
 }
@@ -144,30 +131,19 @@ void V1730Settings::validate() { //FIXME validate bit fields too
 void V1730Settings::chanDefaults(uint32_t ch) {
     chans[ch].enabled = 0; //1 bit
     chans[ch].dynamic_range = 0; // 1 bit
-    chans[ch].pre_trigger = 30; // 9* bit
     chans[ch].trg_threshold = 100; // 12 bit
-    chans[ch].fixed_baseline = 0; // 12 bit
     chans[ch].shaped_trigger_width = 10; // 10 bit
-    chans[ch].trigger_holdoff = 30; // 10* bit
-    chans[ch].charge_sensitivity = 000; // 3 bit (see docs)
-    chans[ch].pulse_polarity = 1; // 1 bit (0->positive, 1->negative)
-    chans[ch].trigger_config = 0; // 2 bit (see docs)
-    chans[ch].baseline_mean = 3; // 3 bit (fixed,16,64,256,1024)
-    chans[ch].self_trigger = 1; // 1 bit (0->enabled, 1->disabled)
     chans[ch].dc_offset = 0x8000; // 16 bit (-1V to 1V)
 }
 
 void V1730Settings::groupDefaults(uint32_t gr) {
     groups[gr].local_logic = 3; // 2 bit
-    groups[gr].valid_logic = 3; // 2 bit
     groups[gr].global_trigger = 0; // 1 bit
     groups[gr].trg_out = 0; // 1 bit
-    groups[gr].record_length = 200; // 16* bit
-    groups[gr].ev_per_buffer = 50; // 10 bit
 }
 
 V1730::V1730(VMEBridge &_bridge, uint32_t _baseaddr) : Digitizer(_bridge,_baseaddr) {
-
+    /* */
 }
 
 V1730::~V1730() {
@@ -206,9 +182,14 @@ bool V1730::program(DigitizerSettings &_settings) {
     data = (0<<0) | (0<<4) | (0<<8) | (0<<12); // ignored for now
     write32(REG_LVDS_NEW_FEATURES,data);
 
-    // TODO need to implement trigger polarity
-    data = (1 << 4);// reserved
-//       | (settings.trigger_polarity << 6); // self-trigger polarity
+    // board configuration
+    data = (0 << 0)                               // reserved, must be 0
+         | (settings.card.trigger_overlap << 1)   // trigger overlap dis/allowed
+         | (0 << 2)                               // reserved, must be 0
+         | (settings.card.test_pattern << 3)      // triangular test wave
+         | (1 << 4)                               // reserved, must be 1
+         | (0 << 5)                               // reserved, must be 0
+         | (settings.card.trigger_polarity << 6); // self-trigger polarity
     write32(REG_CONFIG,data);
 
     //build masks while configuring channels
@@ -222,75 +203,51 @@ bool V1730::program(DigitizerSettings &_settings) {
                               | (settings.card.external_trg_out << 30) 
                               | (settings.card.software_trg_out << 31);
     
-    //keep track of the size of the buffers for each memory location
-    uint32_t buffer_sizes[8] = { 0, 0, 0, 0, 0, 0, 0, 0}; //in locations
-
     for (int ch = 0; ch < 16; ch++) {
         channel_enable_mask |= (settings.chans[ch].enabled << ch);
         
         if (ch % 2 == 0) {
             global_trigger_mask |= (settings.groups[ch/2].global_trigger << (ch/2));
             trigger_out_mask |= (settings.groups[ch/2].trg_out << (ch/2));
-            
-            data = settings.groups[ch/2].record_length%8 ?  settings.groups[ch/2].record_length/8+1 : settings.groups[ch/2].record_length/8;
-            write32(REG_RECORD_LENGTH|(ch<<8),data);
-            settings.groups[ch/2].record_length = read32(REG_RECORD_LENGTH|(ch<<8))*8;
-            
-            data = settings.groups[ch/2].valid_mask
-                 | (settings.groups[ch/2].valid_mode << 8)
-                 | (settings.groups[ch/2].valid_majority << 10);
-            //write32(REG_LOCAL_VALIDATION+(ch/2*4),data);
         } else {
-            write32(REG_RECORD_LENGTH|(ch<<8),settings.groups[ch/2].record_length/8);
+            /* */
         }
         
-        if (settings.chans[ch].enabled) {
-            buffer_sizes[ch/2] = (2 + settings.groups[ch/2].record_length/8)*settings.groups[ch/2].ev_per_buffer;
-        }
-        
-        write32(REG_NEV_AGGREGATE|(ch<<8),settings.groups[ch/2].ev_per_buffer);
-        write32(REG_PRE_TRG|(ch<<8),settings.chans[ch].pre_trigger/4);
-        //write32(REG_SHORT_GATE|(ch<<8),settings.chans[ch].short_gate);
-        //write32(REG_LONG_GATE|(ch<<8),settings.chans[ch].long_gate);
-        //write32(REG_PRE_GATE|(ch<<8),settings.chans[ch].gate_offset);
-        //write32(REG_DPP_TRG_THRESHOLD|(ch<<8),settings.chans[ch].trg_threshold);
+        // FIXME check word structure
         write32(REG_TRIGGER_THRESHOLD|(ch<<8),settings.chans[ch].trg_threshold);
-        write32(REG_BASELINE_THRESHOLD|(ch<<8),settings.chans[ch].fixed_baseline);
+        // FIXME check word structure
         write32(REG_SHAPED_TRIGGER_WIDTH|(ch<<8),settings.chans[ch].shaped_trigger_width);
-        write32(REG_TRIGGER_HOLDOFF|(ch<<8),settings.chans[ch].trigger_holdoff/4);
-        //data = (settings.chans[ch].charge_sensitivity)
-        //     | (settings.chans[ch].pulse_polarity << 16)
-        //     | (settings.chans[ch].trigger_config << 18)
-        //     | (settings.chans[ch].baseline_mean << 20)
-        //     | (settings.chans[ch].self_trigger << 24);
-        //write32(REG_DPP_CTRL|(ch<<8),data);
+//      FIXME as far as I can tell, this doesn't exist --- but it should?
+//      write32(REG_TRIGGER_HOLDOFF|(ch<<8),settings.chans[ch].trigger_holdoff/4);
+
+        // FIXME check word structure
         data = (settings.groups[ch/2].local_logic<<0) 
              | (1<<2); // enable request logic
-//           | (settings.groups[ch/2].valid_logic<<4)
-//           | (1<<6); // enable valid logic
         write32(REG_TRIGGER_CTRL|(ch<<8),data);
+        // FIXME check word structure
         write32(REG_DC_OFFSET|(ch<<8),settings.chans[ch].dc_offset);
         
     }
     
+    // FIXME check word structure
     write32(REG_CHANNEL_ENABLE_MASK,channel_enable_mask);
+    // FIXME check word structure
     write32(REG_GLOBAL_TRIGGER_MASK,global_trigger_mask);
+    // FIXME check word structure
     write32(REG_TRIGGER_OUT_MASK,trigger_out_mask);
+
+    // # of samplse to wait before freezing buffer
+    write32(REG_POST_TRG, settings.card.post_trigger);
+
+    // buffer organization
+    write32(REG_BUFF_ORG, settings.card.buff_org);
+    write32(REG_CUSTOM_SIZE, settings.card.custom_size);
+    // wavedump example: write 0x9 to REG_BUFF_ORG and 0x67 to REG_CUSTOM_SIZE
+    // this would be for one channel enabled
     
-    uint32_t largest_buffer = 0;
-    for (int i = 0; i < 8; i++) if (largest_buffer < buffer_sizes[i]) largest_buffer = buffer_sizes[i];
-    const uint32_t total_locations = 640000/8; 
-    const uint32_t num_buffers = total_locations%largest_buffer ? total_locations/largest_buffer : total_locations/largest_buffer+1;
-    uint32_t shifter = num_buffers;
-    for (settings.card.buff_org = 0; shifter != 1; shifter = shifter >> 1, settings.card.buff_org++);
-    if (1u << settings.card.buff_org > num_buffers) settings.card.buff_org--;
-    if (settings.card.buff_org > 0xA) settings.card.buff_org = 0xA;
-    if (settings.card.buff_org < 0x2) settings.card.buff_org = 0x2;
-    cout << "Largest buffer: " << largest_buffer << " loc\nDesired buffers: " << num_buffers << "\nProgrammed buffers: " << (1<<settings.card.buff_org) << endl;
-    write32(REG_BUFF_ORG,settings.card.buff_org);
-    
-    //Set max board aggregates to transver per readout
-    write16(REG_READOUT_BLT_AGGREGATE_NUMBER,settings.card.max_board_agg_blt);
+    //Set max board events to transfer per readout
+//  write16(REG_READOUT_BLT_EVENT_NUMBER,settings.card.max_board_evt_blt);
+    write32(REG_READOUT_BLT_EVENT_NUMBER,settings.card.max_board_evt_blt);
     
     //Enable VME BLT readout
     write16(REG_READOUT_CONTROL,1<<4);
@@ -364,15 +321,11 @@ V1730Decoder::V1730Decoder(size_t _eventBuffer, V1730Settings &_settings) : even
         if (settings.getEnabled(ch)) {
             chan2idx[ch] = nsamples.size();
             idx2chan[nsamples.size()] = ch;
-            nsamples.push_back(settings.getRecordLength(ch));
+            nsamples.push_back(settings.getRecordLength());
             grabbed.push_back(0);
             if (eventBuffer > 0) {
                 grabs.push_back(new uint16_t[eventBuffer*nsamples.back()]);
                 patterns.push_back(new uint16_t[eventBuffer]);
-                baselines.push_back(new uint16_t[eventBuffer]);
-                qshorts.push_back(new uint16_t[eventBuffer]);
-                qlongs.push_back(new uint16_t[eventBuffer]);
-                times.push_back(new uint64_t[eventBuffer]);
             }
         }
     }
@@ -385,10 +338,6 @@ V1730Decoder::~V1730Decoder() {
     for (size_t i = 0; i < grabs.size(); i++) {
         delete [] grabs[i];
         delete [] patterns[i];
-        delete [] baselines[i];
-        delete [] qshorts[i];
-        delete [] qlongs[i];
-        delete [] times[i];
     }
 }
 
@@ -481,13 +430,10 @@ void V1730Decoder::writeOut(H5File &file, size_t nEvents) {
         ival = settings.getDCOffset(idx2chan[i]);
         offset.write(PredType::NATIVE_UINT32,&ival);
         
-        Attribute samples = group.createAttribute("samples",PredType::NATIVE_UINT32,scalar);
-        ival = settings.getRecordLength(idx2chan[i]);
-        samples.write(PredType::NATIVE_UINT32,&ival);
-        
-        Attribute presamples = group.createAttribute("presamples",PredType::NATIVE_UINT32,scalar);
-        ival = settings.getPreSamples(idx2chan[i]);
-        presamples.write(PredType::NATIVE_UINT32,&ival);
+        // FIXME this should be a card-level construct
+//      Attribute samples = group.createAttribute("samples",PredType::NATIVE_UINT32,scalar);
+//      ival = settings.getRecordLength(idx2chan[i]);
+//      samples.write(PredType::NATIVE_UINT32,&ival);
         
         Attribute threshold = group.createAttribute("threshold",PredType::NATIVE_UINT32,scalar);
         ival = settings.getThreshold(idx2chan[i]);
