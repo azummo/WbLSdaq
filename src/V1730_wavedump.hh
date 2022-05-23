@@ -208,6 +208,7 @@ class V1730_wavedump : public Digitizer {
         
         virtual bool checkTemps(std::vector<uint32_t> &temps, uint32_t danger);
         
+        virtual void readAllRegisters();
     protected:
         
         size_t readoutBLT_evtsz(char *buffer, size_t buffer_size);
