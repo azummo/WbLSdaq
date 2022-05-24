@@ -143,7 +143,7 @@ void V1730Settings::groupDefaults(uint32_t gr) {
 }
 
 V1730::V1730(VMEBridge &_bridge, uint32_t _baseaddr) : Digitizer(_bridge,_baseaddr) {
-    /* */
+    readableRegisters = {0x1024, 0x1124, 0x1224, 0x1324, 0x1424, 0x1524, 0x1624, 0x1724, 0x1824, 0x1924, 0x1A24, 0x1B24, 0x1C24, 0x1D24, 0x1E24, 0x1F24, 0x1028, 0x1128, 0x1228, 0x1328, 0x1428, 0x1528, 0x1628, 0x1728, 0x1828, 0x1928, 0x1A28, 0x1B28, 0x1C28, 0x1D28, 0x1E28, 0x1F28, 0x1070, 0x1170, 0x1270, 0x1370, 0x1470, 0x1570, 0x1670, 0x1770, 0x1870, 0x1970, 0x1A70, 0x1B70, 0x1C70, 0x1D70, 0x1E70, 0x1F70, 0x1080, 0x1180, 0x1280, 0x1380, 0x1480, 0x1580, 0x1680, 0x1780, 0x1880, 0x1980, 0x1A80, 0x1B80, 0x1C80, 0x1D80, 0x1E80, 0x1F80, 0x1084, 0x1184, 0x1284, 0x1384, 0x1484, 0x1584, 0x1684, 0x1784, 0x1088, 0x1188, 0x1288, 0x1388, 0x1488, 0x1588, 0x1688, 0x1788, 0x1888, 0x1988, 0x1A88, 0x1B88, 0x1C88, 0x1D88, 0x1E88, 0x1F88, 0x108C, 0x118C, 0x128C, 0x138C, 0x148C, 0x158C, 0x168C, 0x178C, 0x188C, 0x198C, 0x1A8C, 0x1B8C, 0x1C8C, 0x1D8C, 0x1E8C, 0x1F8C, 0x1098, 0x1198, 0x1298, 0x1398, 0x1498, 0x1598, 0x1698, 0x1798, 0x1898, 0x1998, 0x1A98, 0x1B98, 0x1C98, 0x1D98, 0x1E98, 0x1F98, 0x10A8, 0x11A8, 0x12A8, 0x13A8, 0x14A8, 0x15A8, 0x16A8, 0x17A8, 0x18A8, 0x19A8, 0x1AA8, 0x1BA8, 0x1CA8, 0x1DA8, 0x1EA8, 0x1FA8, 0x10EC, 0x11EC, 0x12EC, 0x13EC, 0x14EC, 0x15EC, 0x16EC, 0x17EC, 0x18EC, 0x19EC, 0x1AEC, 0x1BEC, 0x1CEC, 0x1DEC, 0x1EEC, 0x1FEC, 0x8000, 0x800C, 0x8020, 0x8100, 0x8104, 0x810C, 0x8110, 0x8114, 0x8118, 0x811C, 0x8120, 0x8124, 0x812C, 0x8138, 0x8140, 0x8144, 0x814C, 0x8168, 0x816C, 0x8170, 0x8178, 0x81A0, 0x81B4, 0x81C4, 0xEF00, 0xEF04, 0xEF08, 0xEF0C, 0xEF10, 0xEF14, 0xEF18, 0xEF1C, 0xEF20, 0xF000, 0xF004, 0xF008, 0xF00C};
 }
 
 V1730::~V1730() {
@@ -248,9 +248,16 @@ bool V1730::program(DigitizerSettings &_settings) {
     //Set max board events to transfer per readout
 //  write16(REG_READOUT_BLT_EVENT_NUMBER,settings.card.max_board_evt_blt);
     write32(REG_READOUT_BLT_EVENT_NUMBER,settings.card.max_board_evt_blt);
+
+//  write32(REG_SOFTWARE_RESET,0);
+//  write32(0x1084, 0x3);
+    write32(0x1098, 0xE665);
+//  write32(0x810C, 0x80000001);
     
     //Enable VME BLT readout
     write16(REG_READOUT_CONTROL,1<<4);
+
+    readAllRegisters();
     
     return true;
 }
@@ -284,6 +291,17 @@ bool V1730::checkTemps(vector<uint32_t> &temps, uint32_t danger) {
         if (temps[ch] >= danger) over = true;
     }
     return over;
+}
+
+void V1730::readAllRegisters() {
+    uint32_t buffer;
+    ios_base::fmtflags flags = cout.flags();
+    for (size_t i = 0 ; i < readableRegisters.size() ; i++){
+        uint32_t addr = readableRegisters[i];
+        buffer = read32(addr);
+        cout << hex << "read32(0x" << addr << ") = 0x" << buffer << endl;
+    }
+    cout.flags(flags);
 }
 
 size_t V1730::readoutBLT_evtsz(char *buffer, size_t buffer_size) {
@@ -456,25 +474,11 @@ void V1730Decoder::writeOut(H5File &file, size_t nEvents) {
         patterns_ds.write(patterns[i], PredType::NATIVE_UINT16);
         memmove(patterns[i],patterns[i]+nEvents,sizeof(uint16_t)*(grabbed[i]-nEvents));
         
-        cout << "\t" << groupname << "/baselines" << endl;
-        DataSet baselines_ds = file.createDataSet(groupname+"/baselines", PredType::NATIVE_UINT16, metaspace);
-        baselines_ds.write(baselines[i], PredType::NATIVE_UINT16);
-        memmove(baselines[i],baselines[i]+nEvents,sizeof(uint16_t)*(grabbed[i]-nEvents));
-        
-        cout << "\t" << groupname << "/qshorts" << endl;
-        DataSet qshorts_ds = file.createDataSet(groupname+"/qshorts", PredType::NATIVE_UINT16, metaspace);
-        qshorts_ds.write(qshorts[i], PredType::NATIVE_UINT16);
-        memmove(qshorts[i],qshorts[i]+nEvents,sizeof(uint16_t)*(grabbed[i]-nEvents));
-        
-        cout << "\t" << groupname << "/qlongs" << endl;
-        DataSet qlongs_ds = file.createDataSet(groupname+"/qlongs", PredType::NATIVE_UINT16, metaspace);
-        qlongs_ds.write(qlongs[i], PredType::NATIVE_UINT16);
-        memmove(qlongs[i],qlongs[i]+nEvents,sizeof(uint16_t)*(grabbed[i]-nEvents));
-
-        cout << "\t" << groupname << "/times" << endl;
-        DataSet times_ds = file.createDataSet(groupname+"/times", PredType::NATIVE_UINT64, metaspace);
-        times_ds.write(times[i], PredType::NATIVE_UINT64);
-        memmove(times[i],times[i]+nEvents,sizeof(uint64_t)*(grabbed[i]-nEvents));
+//      TODO might be worth monitoring somehow
+//      cout << "\t" << groupname << "/baselines" << endl;
+//      DataSet baselines_ds = file.createDataSet(groupname+"/baselines", PredType::NATIVE_UINT16, metaspace);
+//      baselines_ds.write(baselines[i], PredType::NATIVE_UINT16);
+//      memmove(baselines[i],baselines[i]+nEvents,sizeof(uint16_t)*(grabbed[i]-nEvents));
         
         grabbed[i] -= nEvents;
     }
@@ -485,8 +489,11 @@ void V1730Decoder::writeOut(H5File &file, size_t nEvents) {
 
 uint32_t* V1730Decoder::decode_chan_agg(uint32_t *chanagg, uint32_t chn, uint16_t pattern) {
 
-    const bool format_flag = chanagg[0] & 0x80000000;
-    if (!format_flag) throw runtime_error("Channel format not found");
+    // TODO a quality check for every 32-bit sample word would be:
+    // assert((word & 0xC000C000) | (0xC000C000) == 0)
+    // which confirms that bits 30:31 and 14:15 are 0, in accordance with docs
+//  const bool format_flag = ...
+//  if (!format_flag) throw runtime_error("Channel format not found");
     
     chanagg_counter++;
    

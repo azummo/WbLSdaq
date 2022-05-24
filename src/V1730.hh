@@ -208,10 +208,13 @@ class V1730 : public Digitizer {
         
         virtual bool checkTemps(std::vector<uint32_t> &temps, uint32_t danger);
         
+        virtual void readAllRegisters();
+
     protected:
         
         size_t readoutBLT_evtsz(char *buffer, size_t buffer_size);
 
+        std::vector<uint32_t> readableRegisters;
 };
 
 class V1730Decoder : public Decoder {
@@ -247,13 +250,11 @@ class V1730Decoder : public Decoder {
         std::map<uint32_t,uint32_t> chan2idx,idx2chan;
         std::vector<size_t> nsamples;
         std::vector<size_t> grabbed;
-        std::vector<uint16_t*> grabs, baselines, qshorts, qlongs, patterns;
-        std::vector<uint64_t*> times;
+        std::vector<uint16_t*> grabs, baselines;
 
         uint32_t* decode_chan_agg(uint32_t *chanagg, uint32_t group, uint16_t pattern);
 
         uint32_t* decode_board_agg(uint32_t *boardagg);
-
 };
 
 #endif
