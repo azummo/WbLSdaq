@@ -102,7 +102,8 @@ V1730Settings::V1730Settings(RunTable &digitizer, RunDB &db) : DigitizerSettings
             chans[ch].enabled = channel["enabled"].cast<bool>() ? 1 : 0; //1 bit
             // FIXME this needs to be tested
 //          chans[ch].dc_offset = round((-channel["dc_offset"].cast<double>()+1.0)/2.0*pow(2.0,16.0)); // 16 bit (-1V to 1V)
-            chans[ch].dc_offset = 0.0;
+//          chans[ch].dc_offset = channel["dc_offset"].cast<double>() * (pow(2, 16) - 1);
+            chans[ch].dc_offset = channel["dc_offset"].cast<double>();
             chans[ch].trg_threshold =  channel["trigger_threshold"].cast<int>();// 12 bit
             chans[ch].shaped_trigger_width = channel["shaped_trigger_width"].cast<int>(); // 10 bit
 	        chans[ch].dynamic_range = channel["dynamic_range"].cast<int>(); // 1 bit (see docs 0->2Vpp, 1->0.5Vpp)
@@ -246,13 +247,11 @@ bool V1730::program(DigitizerSettings &_settings) {
     // this would be for one channel enabled
     
     //Set max board events to transfer per readout
-//  write16(REG_READOUT_BLT_EVENT_NUMBER,settings.card.max_board_evt_blt);
-    write32(REG_READOUT_BLT_EVENT_NUMBER,settings.card.max_board_evt_blt);
+    write16(REG_READOUT_BLT_EVENT_NUMBER,settings.card.max_board_evt_blt);
 
-//  write32(REG_SOFTWARE_RESET,0);
-//  write32(0x1084, 0x3);
+    // FIXME this is a temporary hack and should be removed
+    // once the semantics of the DC offset are settled
     write32(0x1098, 0xE665);
-//  write32(0x810C, 0x80000001);
     
     //Enable VME BLT readout
     write16(REG_READOUT_CONTROL,1<<4);
