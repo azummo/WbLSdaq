@@ -174,7 +174,7 @@ void V1742calib::calibrate(uint16_t *samples[4][8], uint16_t *trn_samples[4], si
 
 }
 
-V1742::V1742(VMEBridge &_bridge, uint32_t _baseaddr) : Digitizer(_bridge,_baseaddr) {
+V1742::V1742(BoardCommManager &_bridge, uint32_t _baseaddr) : Digitizer(_bridge,_baseaddr) {
 
 }
 

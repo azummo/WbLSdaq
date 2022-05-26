@@ -169,7 +169,7 @@ void V1730_DPPSettings::groupDefaults(uint32_t gr) {
     groups[gr].ev_per_buffer = 50; // 10 bit
 }
 
-V1730_DPP::V1730_DPP(VMEBridge &_bridge, uint32_t _baseaddr) : Digitizer(_bridge,_baseaddr) {
+V1730_DPP::V1730_DPP(BoardCommManager &_bridge, uint32_t _baseaddr) : Digitizer(_bridge,_baseaddr) {
 
 }
 

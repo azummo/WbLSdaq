@@ -28,6 +28,8 @@
 #include <fstream>
 
 #include "RunDB.hh"
+#include "BoardCommManager.hh"
+#include "CONETNetwork.hh"
 #include "VMEBridge.hh"
 #include "V1730_wavedump.hh"
 #include "V1730_dummy.hh"
@@ -41,7 +43,6 @@
 
 using namespace std;
 using namespace H5;
-
 
 bool stop;
 bool readout_running;
@@ -369,7 +370,6 @@ int main(int argc, char **argv) {
     }
     
     //Every run has these options
-    const int linknum = run["link_num"].cast<int>();
     const int temptime = run["check_temps_every"].cast<int>();
     bool config_only = false;
     if (run.isMember("config_only")) {
@@ -391,11 +391,30 @@ int main(int argc, char **argv) {
 //      v1742calibs.push_back(V1742::staticGetCalib(stngs->sampleFreq(),run["link_num"].cast<int>(),tbl["base_address"].cast<int>()));
     }
 
-    cout << "Opening VME link..." << endl;
-    
-    // ejc
-    // from the device having swapped to _1, have tracked this down as a bug?
-    VMEBridge bridge(0,linknum);
+    map<string, BoardCommManager*> communications;
+    vector<RunTable> links = db.getGroup("Communication");
+    if (links.size() > 0) cout << "Opening communcation links..." << endl;
+    for (size_t i =0; i < links.size(); i++){
+        RunTable &tbl = links[i];
+        cout << "\t" << tbl["index"].cast<string>() << endl;
+        BoardCommManager* link;
+        if (tbl["type"].cast<string>() == "VMEBridge") {
+            // from the device having swapped to _1, have tracked this down
+            // as a bug?
+            const int linknum = tbl["link_num"].cast<int>();
+            link = new VMEBridge(0,linknum);
+        }
+        else if (tbl["type"].cast<string>() == "CONETNetwork") {
+            const int linknum = tbl["link_num"].cast<int>();
+            link = new CONETNetwork(linknum);
+        }
+        else {
+            stringstream err;
+            err << "Unknown communcation channel type: " << tbl["type"].cast<string>();
+            throw runtime_error(err.str());
+        }
+        communications[tbl["index"].cast<string>()] = link;
+    }
     
     vector<V65XX*> hvs;
     vector<RunTable> v65XXs = db.getGroup("V65XX");
@@ -403,6 +422,7 @@ int main(int argc, char **argv) {
     for (size_t i = 0; i < v65XXs.size(); i++) {
         RunTable &tbl = v65XXs[i];
         cout << "\t" << tbl["index"].cast<string>() << endl;
+        BoardCommManager& bridge = *(communications[tbl["communication"].cast<string>()]);
         hvs.push_back(new V65XX(bridge,tbl["base_address"].cast<int>()));
         hvs.back()->set(tbl);
     }
@@ -434,6 +454,7 @@ int main(int argc, char **argv) {
     vector<Buffer*> buffers;
     vector<Decoder*> decoders;
 
+/*
     vector<RunTable> v1730wavedumps = db.getGroup("V1730wavedump");
     for (size_t i = 0; i < v1730wavedumps.size(); i++) {
         RunTable &tbl = v1730wavedumps[i];
@@ -463,10 +484,12 @@ int main(int argc, char **argv) {
         // decoders need settings after programming
         decoders.push_back(new V1730_dummyDecoder(eventBufferSize,*stngs));
     }
+*/
 
     vector<RunTable> v1730dpps = db.getGroup("V1730dpp");
     for (size_t i = 0; i < v1730dpps.size(); i++) {
         RunTable &tbl = v1730dpps[i];
+        BoardCommManager& bridge = *(communications[tbl["communication"].cast<string>()]);
         cout << "* V1730dpp - " << tbl.getIndex() << endl;
         V1730_DPPSettings *stngs = new V1730_DPPSettings(tbl,db);
         settings.push_back(stngs);
@@ -482,6 +505,7 @@ int main(int argc, char **argv) {
     vector<RunTable> v1730s = db.getGroup("V1730");
     for (size_t i = 0; i < v1730s.size(); i++) {
         RunTable &tbl = v1730s[i];
+        BoardCommManager& bridge = *(communications[tbl["communication"].cast<string>()]);
         cout << "* V1730 - " << tbl.getIndex() << endl;
         V1730Settings *stngs = new V1730Settings(tbl,db);
         settings.push_back(stngs);
@@ -496,6 +520,7 @@ int main(int argc, char **argv) {
     
     for (size_t i = 0; i < v1742s.size(); i++) {
         RunTable &tbl = v1742s[i];
+        BoardCommManager& bridge = *(communications[tbl["communication"].cast<string>()]);
         cout << "* V1742 - " << tbl.getIndex() << endl;
         V1742Settings *stngs = v1742settings[i];
         settings.push_back(stngs);

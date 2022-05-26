@@ -21,7 +21,7 @@
 #include <ctime>
 
 #include <CAENDigitizer.h>
-#include "VMEBridge.hh"
+#include "BoardCommManager.hh"
 #include "Digitizer.hh"
 #include "RunDB.hh"
 #include "json.hh"
@@ -187,7 +187,7 @@ class V1742 : public Digitizer {
     static constexpr uint32_t REG_MAX_EVENT_BLT = 0xEF1C;
     
     public:
-        V1742(VMEBridge &bridge, uint32_t baseaddr);
+        V1742(BoardCommManager &bridge, uint32_t baseaddr);
         
         virtual ~V1742();
         

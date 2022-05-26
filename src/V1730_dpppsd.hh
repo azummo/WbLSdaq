@@ -20,7 +20,7 @@
 #include <string>
 #include <ctime>
 
-#include "VMEBridge.hh"
+#include "BoardCommManager.hh"
 #include "Digitizer.hh"
 #include "RunDB.hh"
 #include "json.hh"
@@ -227,7 +227,7 @@ class V1730_DPP : public Digitizer {
         static constexpr uint32_t REG_VME_ADDRESS_RELOCATION = 0xEF10;
         static constexpr uint32_t REG_READOUT_BLT_AGGREGATE_NUMBER = 0xEF1C;
         
-        V1730_DPP(VMEBridge &bridge, uint32_t baseaddr);
+        V1730_DPP(BoardCommManager &bridge, uint32_t baseaddr);
         
         virtual ~V1730_DPP();
         
