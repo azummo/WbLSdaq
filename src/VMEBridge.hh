@@ -39,9 +39,10 @@ class VMEBridge {
         inline int getLinkNum() { return link; }
         inline int getBoardNum() { return board; }
 
-        inline void write32(uint32_t addr, uint32_t data) {
+        inline void write32(uint32_t base, uint32_t addr, uint32_t data) {
+            addr |= base;
+            int res = CAENVME_WriteCycle(handle, base|addr, &data, cvA32_U_DATA, cvD32);
             //std::cout << "\twrite32@" << std::hex << addr << ':' << data << dec << endl;
-            int res = CAENVME_WriteCycle(handle, addr, &data, cvA32_U_DATA, cvD32);
             if (res) {
                 std::stringstream err;
                 err << error_codes[-res] << " :: write32 @ " << std::hex << addr << " : " << data;
@@ -50,7 +51,8 @@ class VMEBridge {
             usleep(10000);
         }        
         
-        inline uint32_t read32(uint32_t addr) {
+        inline uint32_t read32(uint32_t base, uint32_t addr) {
+            addr |= base;
             uint32_t read = 0;
             //std::cout << "\tread32@" << std::hex << addr << ':';
             usleep(1);
@@ -64,7 +66,8 @@ class VMEBridge {
             return read;
         }
         
-        inline void write16(uint32_t addr, uint32_t data) {
+        inline void write16(uint32_t base, uint32_t addr, uint32_t data) {
+            addr |= base;
             //std::cout << "\twrite16@" << std::hex << addr << ':' << data << dec << endl;
             int res = CAENVME_WriteCycle(handle, addr, &data, cvA32_U_DATA, cvD16);
             if (res) {
@@ -75,7 +78,8 @@ class VMEBridge {
             usleep(10000);
         }        
         
-        inline uint32_t read16(uint32_t addr) {
+        inline uint32_t read16(uint32_t base, uint32_t addr) {
+            addr |= base;
             uint32_t read = 0;
             //std::cout << "\tread16@" << std::hex << addr << ':';
             usleep(1);
@@ -89,7 +93,8 @@ class VMEBridge {
             return read;
         }
         
-        inline uint32_t readBLT(uint32_t addr, void *buffer, uint32_t size) {
+        inline uint32_t readBLT(uint32_t base, uint32_t addr, void *buffer, uint32_t size) {
+            addr |= base;
             uint32_t bytes;
             //std::cout << "\tBLT@" << std::hex << addr << " for " << dec << size << endl;
             usleep(1);
