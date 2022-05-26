@@ -388,7 +388,7 @@ int main(int argc, char **argv) {
         cout << "* V1742 - " << tbl.getIndex() << endl;
         V1742Settings *stngs = new V1742Settings(tbl,db);
         v1742settings.push_back(stngs);
-        v1742calibs.push_back(V1742::staticGetCalib(stngs->sampleFreq(),run["link_num"].cast<int>(),tbl["base_address"].cast<int>()));
+//      v1742calibs.push_back(V1742::staticGetCalib(stngs->sampleFreq(),run["link_num"].cast<int>(),tbl["base_address"].cast<int>()));
     }
 
     cout << "Opening VME link..." << endl;

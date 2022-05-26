@@ -205,9 +205,9 @@ class V1742 : public Digitizer {
         
         virtual bool checkTemps(std::vector<uint32_t> &temps, uint32_t danger);
         
-        virtual V1742calib* getCalib(V1742SampleFreq freq);
+//      virtual V1742calib* getCalib(V1742SampleFreq freq);
         
-        static V1742calib* staticGetCalib(V1742SampleFreq freq, int link, uint32_t baseaddr);
+//      static V1742calib* staticGetCalib(V1742SampleFreq freq, int link, uint32_t baseaddr);
         
 };
 

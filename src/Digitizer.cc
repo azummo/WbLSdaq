@@ -26,7 +26,7 @@ DigitizerSettings::~DigitizerSettings() {
 
 }
 
-Digitizer::Digitizer(VMEBridge &bridge, uint32_t baseaddr) : VMECard(bridge, baseaddr) {
+Digitizer::Digitizer(BoardCommManager &bridge, uint32_t baseaddr) : VMECard(bridge, baseaddr) {
 
 }
 

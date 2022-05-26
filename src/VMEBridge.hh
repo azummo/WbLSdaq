@@ -15,6 +15,7 @@
  *  along with WbLSdaq. If not, see <http://www.gnu.org/licenses/>.
  */
  
+#include <BoardCommManager.hh>
 #include <unistd.h>
 #include <string>
 #include <sstream>
@@ -24,7 +25,7 @@
 #ifndef VMEBridge__hh
 #define VMEBridge__hh
 
-class VMEBridge {
+class VMEBridge: public BoardCommManager {
 
     protected: 
         static const std::string error_codes[6];

@@ -284,6 +284,7 @@ bool V1742::checkTemps(vector<uint32_t> &temps, uint32_t danger) {
     return over;
 }
 
+/*
 V1742calib* V1742::staticGetCalib(V1742SampleFreq freq, int link, uint32_t baseaddr) {
     int handle = 0;
     int res = CAEN_DGTZ_OpenDigitizer(CAEN_DGTZ_USB, link, 0, baseaddr, &handle);
@@ -309,13 +310,16 @@ V1742calib* V1742::staticGetCalib(V1742SampleFreq freq, int link, uint32_t basea
     
     return new V1742calib(corr);
 }
+*/
 
 
+/*
 V1742calib* V1742::getCalib(V1742SampleFreq freq) {
     //This ***will not work*** here due to a bug in CAENDigitizer
     //call the static version BEFORE invoking any CAENVME methods
     return staticGetCalib(freq,bridge.getLinkNum(),baseaddr);
 }
+*/
 
 V1742Decoder::V1742Decoder(size_t _eventBuffer, V1742calib *_calib, V1742Settings &_settings) : eventBuffer(_eventBuffer), calib(_calib), settings(_settings) {
 

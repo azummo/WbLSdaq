@@ -44,7 +44,7 @@ class Digitizer : public VMECard {
 
     public:   
     
-        Digitizer(VMEBridge &bridge, uint32_t baseaddr);
+        Digitizer(BoardCommManager &bridge, uint32_t baseaddr);
         
         virtual ~Digitizer();
     
