@@ -24,8 +24,8 @@ CONETNetwork::CONETNetwork(int link) {
                                                      &handle);
         if (res) {
             stringstream err;
-            err << error_codes[-res] << " :: Could not open CONET node" << i << "!";
-            throw runtime_error(err.str());
+            err << error_codes[-res] << " :: Could not open CONET node " << i << "!";
+//          throw runtime_error(err.str());
         }
         else { // res == 0 indicates success
             this->handles[i] = handle;
@@ -43,7 +43,7 @@ CONETNetwork::~CONETNetwork() noexcept(false) {
             CAENComm_ErrorCode res = CAENComm_CloseDevice(handle);
             if (res) {
                 stringstream err;
-                err << error_codes[-res] << " :: Could not close CONET node" << i << "!";
+                err << error_codes[-res] << " :: Could not close CONET node " << i << "!";
                 throw runtime_error(err.str());
             }
             else { // res == 0 indicates success
