@@ -82,7 +82,7 @@ class CONETNetwork: public BoardCommManager {
             }
             usleep(1);
             int res = CAENComm_MBLTRead(handle, addr, (uint32_t*)buffer, bltsize, (int*)&nwords);
-            if (res && (res != -1)) { //we ignore bus errors for BLT
+            if (res && (res != -13)) { // ignore CAENComm_Terminated for BLT
                 std::stringstream err;
                 err << error_codes[-res] << " :: readBLT @ node " << node << ":" << std::hex << addr;
                 throw std::runtime_error(err.str());
