@@ -334,6 +334,8 @@ V1730Decoder::V1730Decoder(size_t _eventBuffer, V1730Settings &_settings) : even
 
     dispatch_index = decode_counter = chanagg_counter = boardagg_counter = 0;
     
+    counters = vector<uint32_t>();
+    timetags = vector<uint32_t>();
     for (size_t ch = 0; ch < 16; ch++) {
         if (settings.getEnabled(ch)) {
             chan2idx[ch] = nsamples.size();
@@ -387,7 +389,7 @@ size_t V1730Decoder::eventsReady() {
 }
 
 // length, lvdsidx, dsize, nsamples, samples[], strlen, strname[]
-
+// TODO dispatch event counter and time tag
 void V1730Decoder::dispatch(int nfd, int *fds) {
     
     size_t ready = eventsReady();
@@ -434,6 +436,15 @@ void V1730Decoder::writeOut(H5File &file, size_t nEvents) {
     Attribute ns_sample = cardgroup.createAttribute("ns_sample",PredType::NATIVE_DOUBLE,scalar);
     dval = 2.0;
     ns_sample.write(PredType::NATIVE_DOUBLE,&dval);
+
+
+    hsize_t dims[1];
+    dims[0] = nEvents;
+    DataSpace space(1, dims);
+    DataSet counters_ds = file.createDataSet("counters", PredType::NATIVE_UINT32, space);
+    counters_ds.write(counters.data(), PredType::NATIVE_UINT32);
+    DataSet timetags_ds = file.createDataSet("timetags", PredType::NATIVE_UINT32, space);
+    timetags_ds.write(timetags.data(), PredType::NATIVE_UINT32);
     
     for (size_t i = 0; i < nsamples.size(); i++) {
     
@@ -472,7 +483,7 @@ void V1730Decoder::writeOut(H5File &file, size_t nEvents) {
         DataSet patterns_ds = file.createDataSet(groupname+"/patterns", PredType::NATIVE_UINT16, metaspace);
         patterns_ds.write(patterns[i], PredType::NATIVE_UINT16);
         memmove(patterns[i],patterns[i]+nEvents,sizeof(uint16_t)*(grabbed[i]-nEvents));
-        
+
 //      TODO might be worth monitoring somehow
 //      cout << "\t" << groupname << "/baselines" << endl;
 //      DataSet baselines_ds = file.createDataSet(groupname+"/baselines", PredType::NATIVE_UINT16, metaspace);
@@ -545,6 +556,11 @@ uint32_t* V1730Decoder::decode_board_agg(uint32_t *boardagg) {
     const uint16_t pattern = (boardagg[1] >> 8) & 0xFFFF; // this has been changed
     const uint16_t mask = (boardagg[1] & 0xFF) | ((boardagg[2] & 0xFF000000) >> 16);
     //const uint32_t mask = boardagg[1] & 0xFF; // question about the mask -> here we only take 8 masks but in the document, there are 16, we are only taking half of this. Ed's comment: I agree with you that this looks like a bug, but I actually doubt it is. we can do an easy test to determine whether it is or not. for now I would recommend not messing with it at that level, and only change the decoding in decode_chan_aggs to match the channel event structure.
+
+    const uint32_t counter = static_cast<uint32_t>(boardagg[2] & 0x00FFFFFF);
+    const uint32_t timetag = boardagg[3];
+    counters.push_back(counter);
+    timetags.push_back(timetag);
 
     cout << "\t(LVDS & 0xFF): " << (pattern & 0xFF) << endl;
     
