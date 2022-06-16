@@ -632,7 +632,7 @@ int main(int argc, char **argv) {
                 cout << "Temperature check..." << endl;
                 bool overtemp = false;
                 for (size_t i = 0; i < digitizers.size() && !stop; i++) {
-                    overtemp |= digitizers[i]->checkTemps(temps,60);
+                    overtemp |= digitizers[i]->checkTemps(temps,75);
                     cout << settings[i]->getIndex() << " : [ " << temps[0];
                     for (size_t t = 1; t < temps.size(); t++) cout << ", " << temps[t];
                     cout << " ]" << endl;

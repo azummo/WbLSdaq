@@ -21,6 +21,8 @@
  
 #include "V1730.hh"
 
+#include <CAENDigitizer.h>
+
 using namespace std;
 
 // FIXME this needs to be checked for consistency with std firmware
@@ -123,7 +125,7 @@ void V1730Settings::validate() { //FIXME validate bit fields too
     for (int ch = 0; ch < 16; ch++) {
 //      FIXME adapt for post_trigger, which is global
 //      if (chans[ch].pre_trigger > 2044) throw runtime_error("Pre trigger samples exceeds 2044 (ch " + to_string(ch) + ")");
-        if (chans[ch].trg_threshold > 4095) throw runtime_error("Trigger threshold exceeds 4095 (ch " + to_string(ch) + ")");
+//      if (chans[ch].trg_threshold > 4095) throw runtime_error("Trigger threshold exceeds 4095 (ch " + to_string(ch) + ")");
         if (chans[ch].shaped_trigger_width > 1023) throw runtime_error("Shaped trigger width exceeds 1023 (ch " + to_string(ch) + ")");
         if (chans[ch].dc_offset > 65535) throw runtime_error("DC Offset cannot exceed 65535 (ch " + to_string(ch) + ")");
     }
@@ -227,7 +229,7 @@ bool V1730::program(DigitizerSettings &_settings) {
         write32(REG_TRIGGER_CTRL|(ch<<8),data);
         // FIXME check word structure
         write32(REG_DC_OFFSET|(ch<<8),settings.chans[ch].dc_offset);
-        
+        write32(REG_DYNAMIC_RANGE|(ch<<8), settings.chans[ch].dynamic_range);
     }
     
     // FIXME check word structure
@@ -237,26 +239,24 @@ bool V1730::program(DigitizerSettings &_settings) {
     // FIXME check word structure
     write32(REG_TRIGGER_OUT_MASK,trigger_out_mask);
 
-    // # of samplse to wait before freezing buffer
-    write32(REG_POST_TRG, settings.card.post_trigger);
-
     // buffer organization
     write32(REG_BUFF_ORG, settings.card.buff_org);
     write32(REG_CUSTOM_SIZE, settings.card.custom_size);
-    // wavedump example: write 0x9 to REG_BUFF_ORG and 0x67 to REG_CUSTOM_SIZE
-    // this would be for one channel enabled
+
+    // # of samplse to wait before freezing buffer
+    write32(REG_POST_TRG, settings.card.post_trigger);
     
     //Set max board events to transfer per readout
     write16(REG_READOUT_BLT_EVENT_NUMBER,settings.card.max_board_evt_blt);
 
     // FIXME this is a temporary hack and should be removed
     // once the semantics of the DC offset are settled
-    write32(0x1098, 0xE665);
+//  write32(0x1098, 0xE665);
     
     //Enable VME BLT readout
     write16(REG_READOUT_CONTROL,1<<4);
 
-    readAllRegisters();
+//  readAllRegisters();
     
     return true;
 }
@@ -441,9 +441,9 @@ void V1730Decoder::writeOut(H5File &file, size_t nEvents) {
     hsize_t dims[1];
     dims[0] = nEvents;
     DataSpace space(1, dims);
-    DataSet counters_ds = file.createDataSet("counters", PredType::NATIVE_UINT32, space);
+    DataSet counters_ds = cardgroup.createDataSet("counters", PredType::NATIVE_UINT32, space);
     counters_ds.write(counters.data(), PredType::NATIVE_UINT32);
-    DataSet timetags_ds = file.createDataSet("timetags", PredType::NATIVE_UINT32, space);
+    DataSet timetags_ds = cardgroup.createDataSet("timetags", PredType::NATIVE_UINT32, space);
     timetags_ds.write(timetags.data(), PredType::NATIVE_UINT32);
     
     for (size_t i = 0; i < nsamples.size(); i++) {
@@ -525,6 +525,11 @@ uint32_t* V1730Decoder::decode_chan_agg(uint32_t *chanagg, uint32_t chn, uint16_
         uint16_t *data = grabs[idx] + ev*len;
         //for (uint32_t *word = event+1, sample = 0; sample < len; word++, sample+=2) {
 	for (uint32_t *word = chanagg, sample = 0; sample < len; word++, sample+=2) {
+                uint32_t content = *word;
+                bool condition = ((content & 0xC000C000) == 0);
+                if (!condition){
+                    throw runtime_error("sample word & 0xC000C000 != 0");
+                }
       	        data[sample+0] = *word & 0x3FFF;
                 data[sample+1] = (*word >> 16) & 0x3FFF;
         }
@@ -533,7 +538,7 @@ uint32_t* V1730Decoder::decode_chan_agg(uint32_t *chanagg, uint32_t chn, uint16_
     } else {
         grabbed[idx]++;
     }
-    
+
     //return chanagg + size;
     return chanagg + len/2;
 
@@ -551,7 +556,10 @@ uint32_t* V1730Decoder::decode_board_agg(uint32_t *boardagg) {
     uint32_t size = boardagg[0] & 0x0FFFFFFF;
     
     //const uint32_t board = (boardagg[1] >> 28) & 0xF;
-    //const bool fail = boardagg[1] & (1 << 26);
+    const bool fail = boardagg[1] & (1 << 26);
+    if (fail){
+        throw runtime_error("board fail flag set. check with an expert.");
+    }
     //const uint16_t pattern = (boardagg[1] >> 8) & 0x7FFF;
     const uint16_t pattern = (boardagg[1] >> 8) & 0xFFFF; // this has been changed
     const uint16_t mask = (boardagg[1] & 0xFF) | ((boardagg[2] & 0xFF000000) >> 16);
@@ -574,7 +582,10 @@ uint32_t* V1730Decoder::decode_board_agg(uint32_t *boardagg) {
             chans = decode_chan_agg(chans,ch,pattern);
         }
     } 
-    
+    if (chans != boardagg+size){
+        throw runtime_error("predicted end of board aggregate != end of channel aggregates");
+    }
+
     return boardagg+size;
 }
 

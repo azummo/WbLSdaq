@@ -1,6 +1,7 @@
 // Ed Callaghan
 // Licensing statement goes here
 
+#include <iostream>
 #include <CONETNetwork.hh>
 using namespace std;
 
@@ -25,6 +26,7 @@ CONETNetwork::CONETNetwork(int link) {
         if (res) {
             stringstream err;
             err << error_codes[-res] << " :: Could not open CONET node " << i << "!";
+	    cerr << err.str() << endl;
 //          throw runtime_error(err.str());
         }
         else { // res == 0 indicates success
