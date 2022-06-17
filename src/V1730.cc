@@ -55,6 +55,7 @@ V1730Settings::V1730Settings(RunTable &digitizer, RunDB &db) : DigitizerSettings
     card.trigger_polarity = digitizer["trigger_polarity"].cast<int>(); // 1 bit
 
     // record length, expressed as custom size on-board
+    // FIXME should be rounded up to the next multiple of 10
     card.record_length = digitizer["record_length"].cast<int>(); // # of samples
     card.custom_size = card.record_length / 10; // see docs
 
@@ -151,7 +152,8 @@ V1730::V1730(BoardCommManager &_bridge, uint32_t _baseaddr) : Digitizer(_bridge,
 
 V1730::~V1730() {
     //Fully reset the board just in case
-    write32(REG_BOARD_CONFIGURATION_RELOAD,0);
+//  write32(REG_BOARD_CONFIGURATION_RELOAD,0);
+    write32(REG_SOFTWARE_RESET,0);
 }
 
 void V1730::calib() {
@@ -171,7 +173,8 @@ bool V1730::program(DigitizerSettings &_settings) {
     uint32_t data;
     
     //Fully reset the board just in case
-    write32(REG_BOARD_CONFIGURATION_RELOAD,0);
+//  write32(REG_BOARD_CONFIGURATION_RELOAD,0);
+    write32(REG_SOFTWARE_RESET,0);
     
     //Front panel config
     data = (1<<0) //ttl
@@ -225,11 +228,12 @@ bool V1730::program(DigitizerSettings &_settings) {
 
         // FIXME check word structure
         data = (settings.groups[ch/2].local_logic<<0) 
-             | (1<<2); // enable request logic
+             | (0<<2); // fixed trigger width
         write32(REG_TRIGGER_CTRL|(ch<<8),data);
+
         // FIXME check word structure
-        write32(REG_DC_OFFSET|(ch<<8),settings.chans[ch].dc_offset);
         write32(REG_DYNAMIC_RANGE|(ch<<8), settings.chans[ch].dynamic_range);
+        write32(REG_DC_OFFSET|(ch<<8),settings.chans[ch].dc_offset);
     }
     
     // FIXME check word structure
@@ -257,7 +261,7 @@ bool V1730::program(DigitizerSettings &_settings) {
     write16(REG_READOUT_CONTROL,1<<4);
 
 //  readAllRegisters();
-    
+
     return true;
 }
 
@@ -298,7 +302,9 @@ void V1730::readAllRegisters() {
     for (size_t i = 0 ; i < readableRegisters.size() ; i++){
         uint32_t addr = readableRegisters[i];
         buffer = read32(addr);
-        cout << hex << "read32(0x" << addr << ") = 0x" << buffer << endl;
+        cout << hex;
+        cout << "read32(0x" << addr << ") = 0x" << buffer << endl;
+        cout << dec;
     }
     cout.flags(flags);
 }
