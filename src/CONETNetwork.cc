@@ -17,7 +17,8 @@ CONETNetwork::CONETNetwork(int link) {
     // could imagine specifying the size in the network configuration...
     // that's not a bad idea
     int handle;
-    for (int i = 0 ; i < CONETNetwork::max_handles ; i++){
+    bool stop = false;
+    for (int i = 0 ; i < CONETNetwork::max_handles && !stop ; i++){
         CAENComm_ErrorCode res = CAENComm_OpenDevice(CAENComm_OpticalLink,
                                                      this->link,
                                                      i,
@@ -26,7 +27,8 @@ CONETNetwork::CONETNetwork(int link) {
         if (res) {
             stringstream err;
             err << error_codes[-res] << " :: Could not open CONET node " << i << "!";
-	    cerr << err.str() << endl;
+            cerr << err.str() << endl;
+//          stop = true;
 //          throw runtime_error(err.str());
         }
         else { // res == 0 indicates success

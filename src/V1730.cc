@@ -90,6 +90,7 @@ V1730Settings::V1730Settings(RunTable &digitizer, RunDB &db) : DigitizerSettings
                 RunTable group = db.getTable(grname,index);
                 
                 groups[ch/2].local_logic = group["local_logic"].cast<int>(); // 2 bit (see docs)
+		groups[ch/2].request_duration = group["request_duration"].cast<int>(); // 1 bit
                 groups[ch/2].global_trigger = group["request_global_trigger"].cast<bool>() ? 1 : 0; // 1 bit
                 groups[ch/2].trg_out = group["request_trig_out"].cast<bool>() ? 1 : 0; // 1 bit
             
@@ -109,7 +110,7 @@ V1730Settings::V1730Settings(RunTable &digitizer, RunDB &db) : DigitizerSettings
             chans[ch].dc_offset = channel["dc_offset"].cast<double>();
             chans[ch].trg_threshold =  channel["trigger_threshold"].cast<int>();// 12 bit
             chans[ch].shaped_trigger_width = channel["shaped_trigger_width"].cast<int>(); // 10 bit
-	        chans[ch].dynamic_range = channel["dynamic_range"].cast<int>(); // 1 bit (see docs 0->2Vpp, 1->0.5Vpp)
+                chans[ch].dynamic_range = channel["dynamic_range"].cast<int>(); // 1 bit (see docs 0->2Vpp, 1->0.5Vpp)
         }
     }
 }
@@ -142,6 +143,7 @@ void V1730Settings::chanDefaults(uint32_t ch) {
 
 void V1730Settings::groupDefaults(uint32_t gr) {
     groups[gr].local_logic = 3; // 2 bit
+    groups[gr].request_duration = 0; // 1 bit
     groups[gr].global_trigger = 0; // 1 bit
     groups[gr].trg_out = 0; // 1 bit
 }
@@ -182,6 +184,10 @@ bool V1730::program(DigitizerSettings &_settings) {
          | (2<<6) // pattern mode
          | (0<<8) // old lvds features
          | (0<<9);// latch on internal trigger 
+    data |= 0x00040000; // FIXME hack to propagate CLKOUT to TRGOUT
+                        // 0x00040000 == TRGOUT
+                        // 0x00050000 == CLKOUT    fires at 125  MHz
+                        // 0x00090000 == CLK phase fires at 62.5 MHz
     write32(REG_FRONT_PANEL_CONTROL,data);
     
     //LVDS new features config
@@ -226,12 +232,10 @@ bool V1730::program(DigitizerSettings &_settings) {
 //      FIXME as far as I can tell, this doesn't exist --- but it should?
 //      write32(REG_TRIGGER_HOLDOFF|(ch<<8),settings.chans[ch].trigger_holdoff/4);
 
-        // FIXME check word structure
-        data = (settings.groups[ch/2].local_logic<<0) 
-             | (0<<2); // fixed trigger width
+        data = (settings.groups[ch/2].local_logic<<0) 	  // interchannel logic
+             | (settings.groups[ch/2].request_duration<<2); // pulse duration
         write32(REG_TRIGGER_CTRL|(ch<<8),data);
 
-        // FIXME check word structure
         write32(REG_DYNAMIC_RANGE|(ch<<8), settings.chans[ch].dynamic_range);
         write32(REG_DC_OFFSET|(ch<<8),settings.chans[ch].dc_offset);
     }
@@ -249,7 +253,10 @@ bool V1730::program(DigitizerSettings &_settings) {
 
     // # of samplse to wait before freezing buffer
     write32(REG_POST_TRG, settings.card.post_trigger);
-    
+
+    // force analog monitor to output trigger sum
+    write32(REG_MONITOR_MODE, 0);
+
     //Set max board events to transfer per readout
     write16(REG_READOUT_BLT_EVENT_NUMBER,settings.card.max_board_evt_blt);
 
@@ -443,6 +450,9 @@ void V1730Decoder::writeOut(H5File &file, size_t nEvents) {
     dval = 2.0;
     ns_sample.write(PredType::NATIVE_DOUBLE,&dval);
 
+    Attribute samples = cardgroup.createAttribute("samples",PredType::NATIVE_UINT32,scalar);
+    ival = static_cast<uint32_t>(settings.getRecordLength());
+    samples.write(PredType::NATIVE_UINT32,&ival);
 
     hsize_t dims[1];
     dims[0] = nEvents;
@@ -530,13 +540,13 @@ uint32_t* V1730Decoder::decode_chan_agg(uint32_t *chanagg, uint32_t chn, uint16_
         if (ev == eventBuffer) throw runtime_error("Decoder buffer for " + settings.getIndex() + " overflowed!");
         uint16_t *data = grabs[idx] + ev*len;
         //for (uint32_t *word = event+1, sample = 0; sample < len; word++, sample+=2) {
-	for (uint32_t *word = chanagg, sample = 0; sample < len; word++, sample+=2) {
+        for (uint32_t *word = chanagg, sample = 0; sample < len; word++, sample+=2) {
                 uint32_t content = *word;
                 bool condition = ((content & 0xC000C000) == 0);
                 if (!condition){
                     throw runtime_error("sample word & 0xC000C000 != 0");
                 }
-      	        data[sample+0] = *word & 0x3FFF;
+                data[sample+0] = *word & 0x3FFF;
                 data[sample+1] = (*word >> 16) & 0x3FFF;
         }
             

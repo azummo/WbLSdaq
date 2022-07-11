@@ -51,6 +51,7 @@ typedef struct {
 
     //REG_LOCAL_TRIGGER_MANAGEMENT
     uint32_t local_logic; // 2 bit [AND, EVEN, ODD, OR]
+    uint32_t request_duration; // 1 bit [fixed with, over/under threshold]
     
     //REG_GLOBAL_TRIGGER_MASK
     uint32_t global_trigger; // 1 bit
@@ -157,6 +158,7 @@ class V1730 : public Digitizer {
         static constexpr uint32_t REG_CHANNEL_CALIB = 0x809C; // good
         static constexpr uint32_t REG_FRONT_PANEL_CONTROL = 0x811C; // good
         static constexpr uint32_t REG_LVDS_NEW_FEATURES = 0x81A0; // good
+	static constexpr uint32_t REG_MONITOR_MODE = 0x8144; // good
         static constexpr uint32_t REG_DUMMY = 0xEF20; // good
         static constexpr uint32_t REG_SOFTWARE_RESET = 0xEF24; // good
         static constexpr uint32_t REG_SOFTWARE_CLEAR = 0xEF28; // good
