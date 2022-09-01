@@ -79,6 +79,7 @@ inline void writeall(const int fd, const void *ptr, int len) {
 class Decoder {
     
     public:
+        virtual ~Decoder();
         
         virtual void decode(Buffer &buffer) = 0;
         

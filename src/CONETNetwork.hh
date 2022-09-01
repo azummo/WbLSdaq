@@ -14,7 +14,7 @@
 class CONETNetwork: public BoardCommManager {
     public:
         CONETNetwork(int link);
-       ~CONETNetwork() noexcept(false);
+        virtual ~CONETNetwork() noexcept(false);
 
         inline int getLinkNum() { return link; }
 

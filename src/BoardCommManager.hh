@@ -9,6 +9,7 @@
 
 class BoardCommManager {
     public:
+        virtual ~BoardCommManager() noexcept(false) {};
         virtual void write32(uint32_t base, uint32_t addr, uint32_t data) = 0;
         virtual uint32_t read32(uint32_t base, uint32_t addr) = 0;
         virtual void write16(uint32_t base, uint32_t addr, uint32_t data) = 0;
