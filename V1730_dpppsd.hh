@@ -158,7 +158,7 @@ class V1730Settings : public DigitizerSettings {
         inline uint32_t getThreshold(uint32_t ch) {
             return chans[ch].trg_threshold;
         }
-        
+
         inline std::string getIndex() {
             return index;
         }

@@ -474,22 +474,21 @@ void V1730Decoder::writeOut(H5File &file, size_t nEvents) {
         ival = settings.getDCOffset(idx2chan[i]);
         offset.write(PredType::NATIVE_UINT32,&ival);
         
-        // FIXME this should be a card-level construct
-//      Attribute samples = group.createAttribute("samples",PredType::NATIVE_UINT32,scalar);
-//      ival = settings.getRecordLength(idx2chan[i]);
-//      samples.write(PredType::NATIVE_UINT32,&ival);
-        
         Attribute threshold = group.createAttribute("threshold",PredType::NATIVE_UINT32,scalar);
         ival = settings.getThreshold(idx2chan[i]);
         threshold.write(PredType::NATIVE_UINT32,&ival);
-        
+
+	Attribute dynamic_range = group.createAttribute("dynamic_range",PredType::NATIVE_DOUBLE,scalar);
+	dval = settings.getDynamicRange(idx2chan[i]);
+	dynamic_range.write(PredType::NATIVE_DOUBLE,&dval);
+
         hsize_t dimensions[2];
         dimensions[0] = nEvents;
         dimensions[1] = nsamples[i];
-        
+
         DataSpace samplespace(2, dimensions);
         DataSpace metaspace(1, dimensions);
-        
+
         cout << "\t" << groupname << "/samples" << endl;
         DataSet samples_ds = file.createDataSet(groupname+"/samples", PredType::NATIVE_UINT16, samplespace);
         samples_ds.write(grabs[i], PredType::NATIVE_UINT16);
@@ -505,7 +504,7 @@ void V1730Decoder::writeOut(H5File &file, size_t nEvents) {
 //      DataSet baselines_ds = file.createDataSet(groupname+"/baselines", PredType::NATIVE_UINT16, metaspace);
 //      baselines_ds.write(baselines[i], PredType::NATIVE_UINT16);
 //      memmove(baselines[i],baselines[i]+nEvents,sizeof(uint16_t)*(grabbed[i]-nEvents));
-        
+
         grabbed[i] -= nEvents;
     }
     

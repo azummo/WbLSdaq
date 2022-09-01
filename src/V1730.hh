@@ -129,7 +129,18 @@ class V1730Settings : public DigitizerSettings {
         inline uint32_t getThreshold(uint32_t ch) {
             return chans[ch].trg_threshold;
         }
-        
+
+        inline double getDynamicRange(uint32_t ch) {
+            if (chans[ch].dynamic_range == 0){
+                return 2000.0; 
+            }
+            else if (chans[ch].dynamic_range == 1){
+                return 500.0; 
+            }
+            // else throw exception
+	    return -1.0;
+        }
+
         inline std::string getIndex() {
             return index;
         }

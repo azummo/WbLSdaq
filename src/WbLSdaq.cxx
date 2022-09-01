@@ -388,7 +388,7 @@ int main(int argc, char **argv) {
         cout << "* V1742 - " << tbl.getIndex() << endl;
         V1742Settings *stngs = new V1742Settings(tbl,db);
         v1742settings.push_back(stngs);
-//      v1742calibs.push_back(V1742::staticGetCalib(stngs->sampleFreq(),run["link_num"].cast<int>(),tbl["base_address"].cast<int>()));
+        v1742calibs.push_back(V1742::staticGetCalib(stngs->sampleFreq(),0,tbl["base_address"].cast<int>()));
     }
 
     map<string, BoardCommManager*> communications;
@@ -532,7 +532,7 @@ int main(int argc, char **argv) {
         // decoders need settings after programming
         decoders.push_back(new V1742Decoder(eventBufferSize,v1742calibs[i],*stngs)); 
     }
-    
+
     size_t arm_last = 0;
     for (size_t i = 0; i < digitizers.size(); i++) {
         if (run.isMember("arm_last") && settings[i]->getIndex() == run["arm_last"].cast<string>()) 
