@@ -11,10 +11,24 @@
 using namespace std;
 
 bool stop;
+pthread_mutex_t stopmutex;
 bool readout_running;
 extern bool decode_running;
 
-int readout(RunDB db, RunTable run){
+typedef struct {
+    RunDB db;
+    RunTable run;
+    int rv;
+    bool stop;
+    pthread_mutex_t mutex;
+} readout_thread_data;
+
+void *readout(void *_data){
+    RunDB db = ((readout_thread_data*) _data)->db;
+    RunTable run = ((readout_thread_data*) _data)->run;
+    readout_thread_data* rdata = (readout_thread_data*) _data;
+    rdata->rv = -1;
+
     const string runtypestr = run["runtype"].cast<string>();
     RunType *runtype = NULL;
     size_t eventBufferSize = 0;
@@ -41,7 +55,7 @@ int readout(RunDB db, RunTable run){
             evtsPerFile = run["events_per_file"].cast<int>();
             if (evtsPerFile == 0) {
                 cout << "Cannot do a timed run all in one file - events_per_file must be nonzero" << endl;
-                return -1;
+                pthread_exit(&(((readout_thread_data*) _data)->rv));
             }
         } else {
             evtsPerFile = 1000; //we need a well defined buffer amount
@@ -54,7 +68,7 @@ int readout(RunDB db, RunTable run){
 
     if (!runtype){
         cout << "Unknown runtype: " << runtypestr << endl;
-        return -1;
+        pthread_exit(&(((readout_thread_data*) _data)->rv));
     }
     
     //Every run has these options
@@ -185,7 +199,8 @@ int readout(RunDB db, RunTable run){
         ((V1730_DPP*)digitizers.back())->stopAcquisition();
         ((V1730_DPP*)digitizers.back())->calib();
         buffers.push_back(new Buffer(tbl["buffer_size"].cast<int>()*1024*1024));
-        if (!digitizers.back()->program(*stngs)) return -1;
+        if (!digitizers.back()->program(*stngs))
+            pthread_exit(&(((readout_thread_data*) _data)->rv));
         // decoders need settings after programming
         decoders.push_back(new V1730_DPPDecoder(eventBufferSize,*stngs));
     }
@@ -201,7 +216,8 @@ int readout(RunDB db, RunTable run){
         ((V1730*)digitizers.back())->stopAcquisition();
         ((V1730*)digitizers.back())->calib();
         buffers.push_back(new Buffer(tbl["buffer_size"].cast<int>()*1024*1024));
-        if (!digitizers.back()->program(*stngs)) return -1;
+        if (!digitizers.back()->program(*stngs))
+            pthread_exit(&(((readout_thread_data*) _data)->rv));
         // decoders need settings after programming
         decoders.push_back(new V1730Decoder(eventBufferSize,*stngs));
     }
@@ -216,7 +232,8 @@ int readout(RunDB db, RunTable run){
         card->stopAcquisition();
         digitizers.push_back(card);
         buffers.push_back(new Buffer(tbl["buffer_size"].cast<int>()*1024*1024));
-        if (!digitizers.back()->program(*stngs)) return -1;
+        if (!digitizers.back()->program(*stngs))
+            pthread_exit(&(((readout_thread_data*) _data)->rv));
         // decoders need settings after programming
         decoders.push_back(new V1742Decoder(eventBufferSize,v1742calibs[i],*stngs)); 
     }
@@ -239,8 +256,12 @@ int readout(RunDB db, RunTable run){
         if (!busy) break;
         if (warning) {
             cout << "HV reports issues, aborting run..." << endl;
-            return -1;
+            pthread_exit(&(rdata->rv));
         }
+        pthread_mutex_lock(&rdata->mutex);
+        if (rdata->stop)
+            stop = true;
+        pthread_mutex_unlock(&rdata->mutex);
         usleep(1000000);
     }
     
@@ -288,6 +309,7 @@ int readout(RunDB db, RunTable run){
 //  }
     pthread_t decode;
     pthread_create(&decode,NULL,&decode_thread,&data);
+//  pthread_create(&decode,NULL,&dispatch_thread,&data);
     
     struct timespec last_temp_time, cur_time;
     clock_gettime(CLOCK_MONOTONIC,&last_temp_time);
@@ -331,6 +353,12 @@ int readout(RunDB db, RunTable run){
                 }
                 pthread_mutex_unlock(&iomutex);
             }
+
+            // check if main thread has instructed to stop
+            pthread_mutex_lock(&rdata->mutex);
+            if (rdata->stop)
+                stop = true;
+            pthread_mutex_unlock(&rdata->mutex);
         } 
         readout_running = false;
     } catch (exception &e) {
@@ -395,7 +423,7 @@ int readout(RunDB db, RunTable run){
         delete it->second;
     }
 
-    return 0;
+    pthread_exit(NULL);
 }
 
 #endif

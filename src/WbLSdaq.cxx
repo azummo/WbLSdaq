@@ -42,6 +42,7 @@
 #include "FileCommunication.hh"
 #include "RunType.hh"
 #include "Decode.hh"
+#include "Dispatch.hh"
 #include "Readout.hh"
 
 using namespace std;
@@ -59,12 +60,28 @@ int main(int argc, char **argv) {
 	    signal(SIGINT,int_handler);
 
 	    cout << "Reading configuration..." << endl;
-	    
+
 	    RunDB db;
 	    db.addFile(argv[i]);
 	    RunTable run = db.getTable("RUN");
-	    
-	    readout(db, run);
+
+        readout_thread_data data;
+        data.db = db;
+        data.run = run;
+        data.stop = false;
+        pthread_mutex_init(&(data.mutex),NULL);
+
+        pthread_t readout_thread;
+        pthread_create(&readout_thread,NULL,&readout,&data);
+
+        // sleep and stop
+//      usleep(20000000);
+//      pthread_mutex_lock(&data.mutex);
+//      data.stop = true;
+//      pthread_mutex_unlock(&data.mutex);
+
+        pthread_join(readout_thread,NULL);
+        pthread_mutex_destroy(&(data.mutex));
     }
     return 0;
 }
