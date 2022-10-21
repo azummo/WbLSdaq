@@ -585,7 +585,7 @@ uint32_t* V1730Decoder::decode_board_agg(uint32_t *boardagg) {
     counters.push_back(counter);
     timetags.push_back(timetag);
 
-    cout << "\t(LVDS & 0xFF): " << (pattern & 0xFF) << endl;
+//  cout << "\t(LVDS & 0xFF): " << (pattern & 0xFF) << endl;
     
     //const uint32_t count = boardagg[2] & 0x7FFFFF;
     //const uint32_t timetag = boardagg[3];

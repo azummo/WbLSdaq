@@ -41,7 +41,7 @@
 #include "EthernetCommunication.hh"
 #include "FileCommunication.hh"
 #include "RunType.hh"
-#include "Decode.hh"
+//#include "Decode.hh"
 #include "Dispatch.hh"
 #include "Readout.hh"
 
@@ -56,7 +56,7 @@ int main(int argc, char **argv) {
 
     for (int i = 1 ; i < argc ; i++){
 	    stop = false;
-	    readout_running = decode_running = false;
+	    readout_running = dispatch_running = false;
 	    signal(SIGINT,int_handler);
 
 	    cout << "Reading configuration..." << endl;

@@ -5,6 +5,8 @@
 
 #include <iostream>
 #include <vector>
+#include <Dispatcher.hh>
+#include <LegacyHDF5Dispatcher.hh>
 #include <RunDB.hh>
 #include <RunType.hh>
 
@@ -45,9 +47,9 @@ void *readout(void *_data){
         } else {
             nRepeat = 0;
         }
-        runtype = new NEventsRun(outfile,nEvents,nRepeat);
+        runtype = new NEventsRun(nRepeat);
         if (!eventBufferSize) eventBufferSize = (size_t)(nEvents*1.5);
-    } else if (runtypestr == "timed") {
+    } /*else if (runtypestr == "timed") {
         cout << "Setting up a time limited run..." << endl;
         const string outfile = run["outfile"].cast<string>();
         int evtsPerFile;
@@ -62,14 +64,14 @@ void *readout(void *_data){
         }
         runtype = new TimedRun(outfile,run["runtime"].cast<int>(),evtsPerFile);
         if (!eventBufferSize) eventBufferSize = (size_t)(evtsPerFile*1.5);
-    } 
-    
-    cout << "Using " << eventBufferSize << " event buffers." << endl;
+    }*/
 
     if (!runtype){
         cout << "Unknown runtype: " << runtypestr << endl;
         pthread_exit(&(((readout_thread_data*) _data)->rv));
     }
+
+    cout << "Using " << eventBufferSize << " event buffers." << endl;
     
     //Every run has these options
     const int temptime = run["check_temps_every"].cast<int>();
@@ -238,14 +240,34 @@ void *readout(void *_data){
         decoders.push_back(new V1742Decoder(eventBufferSize,v1742calibs[i],*stngs)); 
     }
 
+    if (!db.groupExists("Dispatch")){
+        cerr << "error: must specify a Dispatch block in config" << endl;
+        pthread_exit(NULL);
+    }
+    RunTable disptbl = db.getGroup("Dispatch")[0];
+    string dispstr = disptbl["type"].cast<string>();
+    Dispatcher* dispatcher = NULL;
+    if (dispstr == "legacy_hdf5"){
+        int nEvents = run["events"].cast<int>();
+        string basename = run["outfile"].cast<string>();
+        dispatcher = new LegacyHDF5Dispatcher(nEvents, basename, decoders);
+    }
+    if (!dispatcher){
+        cerr << "error: dispatcher type "
+             << dispstr
+             << " is not supported"
+             << endl;
+        pthread_exit(NULL);
+    }
+
     size_t arm_last = 0;
     for (size_t i = 0; i < digitizers.size(); i++) {
         if (run.isMember("arm_last") && settings[i]->getIndex() == run["arm_last"].cast<string>()) 
             arm_last = i;
     }
-    
+
     cout << "Waiting for HV to stabilize..." << endl;
-    
+
     while (!stop) {
         bool busy = false;
         bool warning = false;
@@ -264,16 +286,15 @@ void *readout(void *_data){
         pthread_mutex_unlock(&rdata->mutex);
         usleep(1000000);
     }
-    
-    
+
     cout << "Starting acquisition..." << endl;
-    
+
     pthread_mutex_t iomutex;
     pthread_cond_t newdata;
     pthread_mutex_init(&iomutex,NULL);
     pthread_cond_init(&newdata, NULL);
     vector<uint32_t> temps;
-    
+
     for (size_t i = 0; i < digitizers.size(); i++) {
         if (i == arm_last) continue;
         digitizers[i]->startAcquisition();
@@ -295,9 +316,9 @@ void *readout(void *_data){
         lescopes[i] = NULL;
     }
     
-    decode_thread_data data;
+    dispatch_thread_data data;
     data.buffers = &buffers;
-    data.decoders = &decoders;
+    data.dispatcher = dispatcher;
     data.iomutex = &iomutex;
     data.newdata = &newdata;
     data.runtype = runtype;
@@ -308,8 +329,8 @@ void *readout(void *_data){
 //      data.config = buf.str();
 //  }
     pthread_t decode;
-    pthread_create(&decode,NULL,&decode_thread,&data);
-//  pthread_create(&decode,NULL,&dispatch_thread,&data);
+//  pthread_create(&decode,NULL,&decode_thread,&data);
+    pthread_create(&decode,NULL,&dispatch_thread,&data);
     
     struct timespec last_temp_time, cur_time;
     clock_gettime(CLOCK_MONOTONIC,&last_temp_time);
@@ -397,10 +418,10 @@ void *readout(void *_data){
         digitizers[i]->stopAcquisition();
     }
     pthread_cond_signal(&newdata);
-    
+
     //busy wait for all data to be written out
 //  while (decode_running) { sleep(1); }
-    
+
     pthread_join(decode, NULL);
 //  pthread_exit(NULL);
 
