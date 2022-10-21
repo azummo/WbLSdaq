@@ -75,10 +75,10 @@ int main(int argc, char **argv) {
         pthread_create(&readout_thread,NULL,&readout,&data);
 
         // sleep and stop
-//      usleep(20000000);
-//      pthread_mutex_lock(&data.mutex);
-//      data.stop = true;
-//      pthread_mutex_unlock(&data.mutex);
+        usleep(50000000);
+        pthread_mutex_lock(&data.mutex);
+        data.stop = true;
+        pthread_mutex_unlock(&data.mutex);
 
         pthread_join(readout_thread,NULL);
         pthread_mutex_destroy(&(data.mutex));

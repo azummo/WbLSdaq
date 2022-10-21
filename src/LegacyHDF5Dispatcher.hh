@@ -15,7 +15,7 @@ using namespace H5;
 class LegacyHDF5Dispatcher: public Dispatcher{
   public:
     LegacyHDF5Dispatcher();
-    LegacyHDF5Dispatcher(size_t nEvents,
+    LegacyHDF5Dispatcher(size_t _nEvents,
                          string _basename,
                          vector<Decoder*> _decoders);
    ~LegacyHDF5Dispatcher();

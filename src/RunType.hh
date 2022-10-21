@@ -117,4 +117,27 @@ class TimedRun : public RunType {
 };
 */
 
+class ManualRun : public RunType {
+    protected:
+        size_t curCycle;
+        struct timespec cur_time, last_time;
+
+    public:
+        ManualRun():
+            curCycle(0) { }
+
+        virtual ~ManualRun() {
+            /* */
+        }
+
+        virtual void begin() {
+            clock_gettime(CLOCK_MONOTONIC,&last_time);
+        }
+
+        virtual bool keepgoing() {
+            curCycle++;
+            return true;
+        }
+};
+
 #endif

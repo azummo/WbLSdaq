@@ -7,6 +7,7 @@
 #include <vector>
 #include <Dispatcher.hh>
 #include <LegacyHDF5Dispatcher.hh>
+#include <SocketDispatcher.hh>
 #include <RunDB.hh>
 #include <RunType.hh>
 
@@ -38,7 +39,7 @@ void *readout(void *_data){
         eventBufferSize = run["event_buffer_size"].cast<int>();
     } 
     if (runtypestr == "nevents") {
-            cout << "Setting up an event limited run..." << endl;
+        cout << "Setting up an event limited run..." << endl;
         const string outfile = run["outfile"].cast<string>();
         const int nEvents = run["events"].cast<int>();
         int nRepeat;
@@ -49,7 +50,13 @@ void *readout(void *_data){
         }
         runtype = new NEventsRun(nRepeat);
         if (!eventBufferSize) eventBufferSize = (size_t)(nEvents*1.5);
-    } /*else if (runtypestr == "timed") {
+    }
+    else if (runtypestr == "manual"){
+        cout << "Setting up a manually-stopped  run..." << endl;
+        const string outfile = run["outfile"].cast<string>();
+        runtype = new ManualRun();
+    }
+    /*else if (runtypestr == "timed") {
         cout << "Setting up a time limited run..." << endl;
         const string outfile = run["outfile"].cast<string>();
         int evtsPerFile;
@@ -251,6 +258,11 @@ void *readout(void *_data){
         int nEvents = run["events"].cast<int>();
         string basename = run["outfile"].cast<string>();
         dispatcher = new LegacyHDF5Dispatcher(nEvents, basename, decoders);
+    }
+    else if (dispstr == "socket"){
+        int nEvents = run["events"].cast<int>();
+        string path = run["outfile"].cast<string>();
+        dispatcher = new SocketDispatcher(nEvents, path, buffers.size());
     }
     if (!dispatcher){
         cerr << "error: dispatcher type "
