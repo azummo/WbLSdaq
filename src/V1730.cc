@@ -388,9 +388,22 @@ void V1730Decoder::decode(Buffer &buf) {
     double time_int = (cur_time.tv_sec - last_decode_time.tv_sec)+1e-9*(cur_time.tv_nsec - last_decode_time.tv_nsec);
     last_decode_time = cur_time;
     
-    for (size_t i = 0; i < idx2chan.size(); i++) {
-        cout << "\tch" << idx2chan[i] << "\tev: " << grabbed[i]-lastgrabbed[i] << " / " << (grabbed[i]-lastgrabbed[i])/time_int << " Hz / " << grabbed[i] << " total" << endl;
-    }
+//  for (size_t i = 0; i < idx2chan.size(); i++) {
+//      size_t nev = grabbed[i] - lastgrabbed[i];
+//      double trate = nev / time_int;
+//      cout << "\tch" << idx2chan[i]
+//           << "\tev: " << nev
+//           << " / "
+//           << trate << " Hz "
+//           << "/ "
+//           << grabbed[i] << " total"
+//           << endl;
+//  }
+    double nmb = decode_size / pow(1024, 2);
+    double drate = nmb / time_int;
+    cout << "\t\t data rate: "
+         << drate << " MB/s"
+         << endl;
 }
 
 size_t V1730Decoder::eventsReady() {
@@ -433,7 +446,7 @@ using namespace H5;
 
 void V1730Decoder::writeOut(H5File &file, size_t nEvents) {
 
-    cout << "\t/" << settings.getIndex() << endl;
+//  cout << "\t/" << settings.getIndex() << endl;
 
     Group cardgroup = file.createGroup("/"+settings.getIndex());
         
@@ -468,7 +481,7 @@ void V1730Decoder::writeOut(H5File &file, size_t nEvents) {
         Group group = cardgroup.createGroup(chname);
         string groupname = "/"+settings.getIndex()+"/"+chname;
         
-        cout << "\t" << groupname << endl;
+//      cout << "\t" << groupname << endl;
         
         Attribute offset = group.createAttribute("offset",PredType::NATIVE_UINT32,scalar);
         ival = settings.getDCOffset(idx2chan[i]);
@@ -489,12 +502,12 @@ void V1730Decoder::writeOut(H5File &file, size_t nEvents) {
         DataSpace samplespace(2, dimensions);
         DataSpace metaspace(1, dimensions);
 
-        cout << "\t" << groupname << "/samples" << endl;
+//      cout << "\t" << groupname << "/samples" << endl;
         DataSet samples_ds = file.createDataSet(groupname+"/samples", PredType::NATIVE_UINT16, samplespace);
         samples_ds.write(grabs[i], PredType::NATIVE_UINT16);
         memmove(grabs[i],grabs[i]+nEvents*nsamples[i],nsamples[i]*sizeof(uint16_t)*(grabbed[i]-nEvents));
         
-        cout << "\t" << groupname << "/patterns" << endl;
+//      cout << "\t" << groupname << "/patterns" << endl;
         DataSet patterns_ds = file.createDataSet(groupname+"/patterns", PredType::NATIVE_UINT16, metaspace);
         patterns_ds.write(patterns[i], PredType::NATIVE_UINT16);
         memmove(patterns[i],patterns[i]+nEvents,sizeof(uint16_t)*(grabbed[i]-nEvents));
