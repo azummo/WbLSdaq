@@ -46,4 +46,3 @@ $(LOBJ): build/%.o: build/%.d
 
 clean:
 	rm -f $(BDEP) $(BOBJ) $(LDEP) $(LOBJ) $(BINS)
-

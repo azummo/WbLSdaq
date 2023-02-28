@@ -44,6 +44,7 @@
 //#include "Decode.hh"
 #include "Dispatch.hh"
 #include "Readout.hh"
+#include "SoftwareTrigger.hh"
 
 using namespace std;
 using namespace H5;
@@ -74,11 +75,11 @@ int main(int argc, char **argv) {
         pthread_t readout_thread;
         pthread_create(&readout_thread,NULL,&readout,&data);
 
-        // sleep and stop
-        usleep(50000000);
-        pthread_mutex_lock(&data.mutex);
-        data.stop = true;
-        pthread_mutex_unlock(&data.mutex);
+//      // sleep and stop
+//      usleep(50000000);
+//      pthread_mutex_lock(&data.mutex);
+//      data.stop = true;
+//      pthread_mutex_unlock(&data.mutex);
 
         pthread_join(readout_thread,NULL);
         pthread_mutex_destroy(&(data.mutex));

@@ -5,9 +5,13 @@
 
 #include <iostream>
 #include <vector>
+#include <CAENCONETNetwork.hh>
+#include <CONETNetwork.hh>
+#include <VMEBridge.hh>
 #include <Dispatcher.hh>
 #include <LegacyHDF5Dispatcher.hh>
 #include <SocketDispatcher.hh>
+#include <SoftwareTrigger.hh>
 #include <RunDB.hh>
 #include <RunType.hh>
 
@@ -104,7 +108,7 @@ void *readout(void *_data){
 
     map<string, BoardCommManager*> communications;
     vector<RunTable> links = db.getGroup("Communication");
-    if (links.size() > 0) cout << "Opening communcation links..." << endl;
+    if (links.size() > 0) cout << "Opening communication links..." << endl;
     for (size_t i =0; i < links.size(); i++){
         RunTable &tbl = links[i];
         cout << "\t" << tbl["index"].cast<string>() << endl;
@@ -118,6 +122,10 @@ void *readout(void *_data){
         else if (tbl["type"].cast<string>() == "CONETNetwork") {
             const int linknum = tbl["link_num"].cast<int>();
             link = new CONETNetwork(linknum);
+        }
+        else if (tbl["type"].cast<string>() == "CAENCONETNetwork") {
+            const int linknum = tbl["link_num"].cast<int>();
+            link = new CAENCONETNetwork(linknum);
         }
         else {
             stringstream err;
@@ -307,6 +315,7 @@ void *readout(void *_data){
     pthread_cond_init(&newdata, NULL);
     vector<uint32_t> temps;
 
+    /* better software-triggering below
     for (size_t i = 0; i < digitizers.size(); i++) {
         if (i == arm_last) continue;
         digitizers[i]->startAcquisition();
@@ -320,6 +329,26 @@ void *readout(void *_data){
         if (run.isMember("soft_trig") && settings[arm_last]->getIndex() == run["soft_trig"].cast<string>()) {
             cout << "Software triggering " << settings[arm_last]->getIndex() << endl;
             digitizers[arm_last]->softTrig();
+        }
+    }
+    */
+    for (size_t i = 0; i < digitizers.size(); i++) {
+        if (i == arm_last) continue;
+        digitizers[i]->startAcquisition();
+        for (size_t j = 0 ; j < run["soft_trig"].getArraySize(); j++){
+            if (run.isMember("soft_trig") && settings[i]->getIndex() == run["soft_trig"][j].cast<string>()) {
+                cout << "Software triggering " << settings[i]->getIndex() << endl;
+                digitizers[i]->softTrig();
+            }
+        }
+    }
+    if (digitizers.size() > 0) {
+        digitizers[arm_last]->startAcquisition();
+        for (size_t j = 0 ; j < run["soft_trig"].getArraySize(); j++){
+            if (run.isMember("soft_trig") && settings[arm_last]->getIndex() == run["soft_trig"][j].cast<string>()) {
+                cout << "Software triggering " << settings[arm_last]->getIndex() << endl;
+                digitizers[arm_last]->softTrig();
+            }
         }
     }
     for (size_t i = 0; i < lescopes.size(); i++) {
@@ -343,7 +372,14 @@ void *readout(void *_data){
     pthread_t decode;
 //  pthread_create(&decode,NULL,&decode_thread,&data);
     pthread_create(&decode,NULL,&dispatch_thread,&data);
-    
+
+    software_trigger_thread_data st_data;
+    st_data.settings = &settings;
+    st_data.digitizers = &digitizers;
+    st_data.run = run;
+    pthread_t software_trigger;
+    pthread_create(&software_trigger,NULL,&software_trigger_thread,&st_data);
+
     struct timespec last_temp_time, cur_time;
     clock_gettime(CLOCK_MONOTONIC,&last_temp_time);
     
@@ -357,6 +393,7 @@ void *readout(void *_data){
                 Digitizer *dgtz = digitizers[i];
                 if (dgtz->readoutReady()) {
                     buffers[i]->inc(dgtz->readoutBLT(buffers[i]->wptr(),buffers[i]->free()));
+                    usleep(100);
                     pthread_cond_signal(&newdata);
                 }
                 if (!dgtz->acquisitionRunning()) {
@@ -435,6 +472,7 @@ void *readout(void *_data){
 //  while (decode_running) { sleep(1); }
 
     pthread_join(decode, NULL);
+    pthread_join(software_trigger, NULL);
 //  pthread_exit(NULL);
 
     // clean-up
