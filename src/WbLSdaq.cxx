@@ -26,6 +26,7 @@
 #include <csignal>
 #include <cstring>
 #include <fstream>
+#include <signal.h>
 
 #include "RunDB.hh"
 #include "BoardCommManager.hh"
@@ -41,7 +42,6 @@
 #include "EthernetCommunication.hh"
 #include "FileCommunication.hh"
 #include "RunType.hh"
-//#include "Decode.hh"
 #include "Dispatch.hh"
 #include "Readout.hh"
 #include "SoftwareTrigger.hh"
@@ -50,21 +50,21 @@ using namespace std;
 using namespace H5;
 
 int main(int argc, char **argv) {
-    if (argc < 2) {
-        cout << "usage: ./WbLSdaq FILE..." << endl;
-        return -1;
-    }
+    signal(SIGINT, int_handler);
+    signal(SIGUSR1, usr1_handler);
 
-    for (int i = 1 ; i < argc ; i++){
-	    stop = false;
-	    readout_running = dispatch_running = false;
-	    signal(SIGINT,int_handler);
 
-	    cout << "Reading configuration..." << endl;
+    if (argc > 1) {
+      for (int i = 1 ; i < argc ; i++){
+        stop = false;
+        readout_running = dispatch_running = false;
+        signal(SIGINT,int_handler);
 
-	    RunDB db;
-	    db.addFile(argv[i]);
-	    RunTable run = db.getTable("RUN");
+        cout << "Reading configuration..." << endl;
+
+        RunDB db;
+        db.addFile(argv[i]);
+        RunTable run = db.getTable("RUN");
 
         readout_thread_data data;
         data.db = db;
@@ -75,14 +75,43 @@ int main(int argc, char **argv) {
         pthread_t readout_thread;
         pthread_create(&readout_thread,NULL,&readout,&data);
 
-//      // sleep and stop
-//      usleep(50000000);
-//      pthread_mutex_lock(&data.mutex);
-//      data.stop = true;
-//      pthread_mutex_unlock(&data.mutex);
+        pthread_join(readout_thread,NULL);
+        pthread_mutex_destroy(&(data.mutex));
+      }
+    }
+    else {
+      sigset_t signals;
+      sigemptyset(&signals);
+      sigaddset(&signals, SIGUSR1);
+      int sig;
+
+      while (true) {
+        sigwait(&signals, &sig);
+
+        stop = false;
+        readout_running = dispatch_running = false;
+        signal(SIGINT,int_handler);
+
+        cout << "Reading configuration..." << endl;
+
+        RunDB db;
+        db.addFile("/home/eos/WbLSdaq/example-v1730-config.json");
+        RunTable run = db.getTable("RUN");
+
+        readout_thread_data data;
+        data.db = db;
+        data.run = run;
+        data.stop = false;
+        pthread_mutex_init(&(data.mutex),NULL);
+
+        pthread_t readout_thread;
+        pthread_create(&readout_thread,NULL,&readout,&data);
 
         pthread_join(readout_thread,NULL);
         pthread_mutex_destroy(&(data.mutex));
+      }
     }
+
     return 0;
 }
+

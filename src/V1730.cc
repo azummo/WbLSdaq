@@ -15,6 +15,7 @@
  *  along with WbLSdaq. If not, see <http://www.gnu.org/licenses/>.
  */
  
+#include <cassert>
 #include <cmath>
 #include <iostream>
 #include <stdexcept>
@@ -414,115 +415,68 @@ size_t V1730Decoder::eventsReady() {
     return grabs;
 }
 
-// length, lvdsidx, dsize, nsamples, samples[], strlen, strname[]
-// TODO dispatch event counter and time tag
-void V1730Decoder::dispatch(int nfd, int *fds) {
-    
-    size_t ready = eventsReady();
-    
-    for ( ; dispatch_index < ready; dispatch_index++) {
-        for (size_t i = 0; i < nsamples.size(); i++) {
-            uint8_t lvdsidx = patterns[i][dispatch_index] & 0xFF; 
-            uint8_t dsize = 2;
-            uint16_t nsamps = nsamples[i];
-            uint16_t *samples = &grabs[i][nsamps*dispatch_index];
-            string strname = "/"+settings.getIndex()+"/ch" + to_string(idx2chan[i]);
-            uint16_t strlen = strname.length();
-            uint16_t length = 2+strlen+2+nsamps*2+1+1;
-            for (int j = 0; j < nfd; j++) {
-                writeall(fds[j],&length,2);
-                writeall(fds[j],&lvdsidx,1);
-                writeall(fds[j],&dsize,1);
-                writeall(fds[j],&nsamps,2);
-                writeall(fds[j],samples,nsamps*2);
-                writeall(fds[j],&strlen,2);
-                writeall(fds[j],strname.c_str(),strlen);
-            }
-        }
-    }
-}
-
 using namespace H5;
 
+// ATM: move this to the H5 dispatcher, calls decoder's pack.
 void V1730Decoder::writeOut(H5File &file, size_t nEvents) {
-
-//  cout << "\t/" << settings.getIndex() << endl;
+    DigitizerData data;
+    pack(&data, nEvents);
 
     Group cardgroup = file.createGroup("/"+settings.getIndex());
         
     DataSpace scalar(0,NULL);
     
-    double dval;
-    uint32_t ival;
-    
     Attribute bits = cardgroup.createAttribute("bits",PredType::NATIVE_UINT32,scalar);
-    ival = 14;
-    bits.write(PredType::NATIVE_INT32,&ival);
+    bits.write(PredType::NATIVE_INT32, &data.bits);
     
     Attribute ns_sample = cardgroup.createAttribute("ns_sample",PredType::NATIVE_DOUBLE,scalar);
-    dval = 2.0;
-    ns_sample.write(PredType::NATIVE_DOUBLE,&dval);
+    ns_sample.write(PredType::NATIVE_DOUBLE, &data.ns_sample);
 
     Attribute samples = cardgroup.createAttribute("samples",PredType::NATIVE_UINT32,scalar);
-    ival = static_cast<uint32_t>(settings.getRecordLength());
-    samples.write(PredType::NATIVE_UINT32,&ival);
+    samples.write(PredType::NATIVE_UINT32, &data.samples);
 
     hsize_t dims[1];
     dims[0] = nEvents;
     DataSpace space(1, dims);
     DataSet counters_ds = cardgroup.createDataSet("counters", PredType::NATIVE_UINT32, space);
-    counters_ds.write(counters.data(), PredType::NATIVE_UINT32);
+    counters_ds.write(&data.counters, PredType::NATIVE_UINT32);
     DataSet timetags_ds = cardgroup.createDataSet("timetags", PredType::NATIVE_UINT32, space);
-    timetags_ds.write(timetags.data(), PredType::NATIVE_UINT32);
+    timetags_ds.write(&data.timetags, PredType::NATIVE_UINT32);
     
     for (size_t i = 0; i < nsamples.size(); i++) {
+        DigitizerData::ChannelData& ch = data.channels[i];
     
-        string chname = "ch" + to_string(idx2chan[i]);
+        string chname = "ch" + to_string(ch.chID);
         Group group = cardgroup.createGroup(chname);
         string groupname = "/"+settings.getIndex()+"/"+chname;
         
-//      cout << "\t" << groupname << endl;
-        
         Attribute offset = group.createAttribute("offset",PredType::NATIVE_UINT32,scalar);
-        ival = settings.getDCOffset(idx2chan[i]);
-        offset.write(PredType::NATIVE_UINT32,&ival);
+        offset.write(PredType::NATIVE_UINT32, &ch.offset);
         
         Attribute threshold = group.createAttribute("threshold",PredType::NATIVE_UINT32,scalar);
-        ival = settings.getThreshold(idx2chan[i]);
-        threshold.write(PredType::NATIVE_UINT32,&ival);
+        threshold.write(PredType::NATIVE_UINT32, &ch.threshold);
 
 	Attribute dynamic_range = group.createAttribute("dynamic_range",PredType::NATIVE_DOUBLE,scalar);
-	dval = settings.getDynamicRange(idx2chan[i]);
-	dynamic_range.write(PredType::NATIVE_DOUBLE,&dval);
+	dynamic_range.write(PredType::NATIVE_DOUBLE, &ch.dynamic_range);
 
         hsize_t dimensions[2];
-        dimensions[0] = nEvents;
+        dimensions[0] = data.nEvents;
         dimensions[1] = nsamples[i];
 
         DataSpace samplespace(2, dimensions);
         DataSpace metaspace(1, dimensions);
 
-//      cout << "\t" << groupname << "/samples" << endl;
         DataSet samples_ds = file.createDataSet(groupname+"/samples", PredType::NATIVE_UINT16, samplespace);
-        samples_ds.write(grabs[i], PredType::NATIVE_UINT16);
-        memmove(grabs[i],grabs[i]+nEvents*nsamples[i],nsamples[i]*sizeof(uint16_t)*(grabbed[i]-nEvents));
+        samples_ds.write(&ch.samples[i], PredType::NATIVE_UINT16);
         
-//      cout << "\t" << groupname << "/patterns" << endl;
         DataSet patterns_ds = file.createDataSet(groupname+"/patterns", PredType::NATIVE_UINT16, metaspace);
-        patterns_ds.write(patterns[i], PredType::NATIVE_UINT16);
-        memmove(patterns[i],patterns[i]+nEvents,sizeof(uint16_t)*(grabbed[i]-nEvents));
-
-//      TODO might be worth monitoring somehow
-//      cout << "\t" << groupname << "/baselines" << endl;
-//      DataSet baselines_ds = file.createDataSet(groupname+"/baselines", PredType::NATIVE_UINT16, metaspace);
-//      baselines_ds.write(baselines[i], PredType::NATIVE_UINT16);
-//      memmove(baselines[i],baselines[i]+nEvents,sizeof(uint16_t)*(grabbed[i]-nEvents));
-
-        grabbed[i] -= nEvents;
+        patterns_ds.write(&ch.patterns[i], PredType::NATIVE_UINT16);
     }
     
-    dispatch_index -= nEvents;
-    if (dispatch_index < 0) dispatch_index = 0;
+    //dispatch_index -= nEvents;
+
+    //if (dispatch_index < 0)
+    //    dispatch_index = 0;
 }
 
 uint32_t* V1730Decoder::decode_chan_agg(uint32_t *chanagg, uint32_t chn, uint16_t pattern) {
@@ -615,5 +569,37 @@ uint32_t* V1730Decoder::decode_board_agg(uint32_t *boardagg) {
     }
 
     return boardagg+size;
+}
+
+
+void V1730Decoder::pack(DigitizerData* ddd, size_t nEvents) {
+    DigitizerData& data = *ddd;
+    data.nEvents = nEvents;
+    data.type = 0xcd;
+    data.bits = 14;
+    data.ns_sample = 2.0;
+    data.samples = static_cast<uint32_t>(settings.getRecordLength());
+
+    memcpy(&data.counters, counters.data(), nEvents*sizeof(uint32_t));
+    memcpy(&data.timetags, timetags.data(), nEvents*sizeof(uint32_t));
+
+    timetags.erase(timetags.begin(), timetags.begin() + nEvents);
+    counters.erase(counters.begin(), counters.begin() + nEvents);
+
+    for (size_t i = 0; i < nsamples.size(); i++) {
+        DigitizerData::ChannelData& ch = data.channels[i];
+        ch.chID = idx2chan[i];
+        ch.offset = settings.getDCOffset(idx2chan[i]);
+        ch.threshold = settings.getThreshold(idx2chan[i]);
+        ch.dynamic_range = settings.getDynamicRange(idx2chan[i]);
+
+        memcpy(ch.samples, grabs[i], nsamples[i]*sizeof(uint16_t)*nEvents);
+        memmove(grabs[i],grabs[i]+nEvents*nsamples[i],nsamples[i]*sizeof(uint16_t)*(grabbed[i]-nEvents));
+
+        memcpy(ch.patterns, patterns[i], sizeof(uint16_t)*nEvents);
+        memmove(patterns[i],patterns[i]+nEvents,sizeof(uint16_t)*(grabbed[i]-nEvents));
+
+        grabbed[i] -= nEvents;
+    }
 }
 

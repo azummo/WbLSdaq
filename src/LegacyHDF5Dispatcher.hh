@@ -24,9 +24,11 @@ class LegacyHDF5Dispatcher: public Dispatcher{
     size_t Digest(vector<Buffer*>& buffers);
     void Dispatch(vector<Buffer*>& buffers);
   protected:
+    void Initialize(H5File& file);
+
     string basename;
     vector<Decoder*> decoders;
-    void Initialize(H5File& file);
+    DigitizerData data;
 };
 
 #endif

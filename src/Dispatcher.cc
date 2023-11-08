@@ -21,8 +21,10 @@ bool Dispatcher::Ready(){
     bool rv = this->nEvents > 0;
     for (size_t i = 0; i < this->evtsReady.size(); i++) {
         rate += this->evtsReady[i];
-        if (this->evtsReady[i] < nEvents) rv = false;
+        //if (this->evtsReady[i] < nEvents) rv = false;
+        std::cout << "evtsReady[" << i << "] " << evtsReady[i] << std::endl;
     }
+    if (rate < nEvents) rv = false;
     rate /= evtsReady.size();
     
     cout << "Cycle " << curCycle+1 << endl;
@@ -32,5 +34,6 @@ bool Dispatcher::Ready(){
     rate /= time_int;
     cout << "Avg rate " << rate << " Hz" << endl;
     
+    std::cout << "nEvents " << this->nEvents << ", rv " << rv << std::endl;
     return rv;
 }

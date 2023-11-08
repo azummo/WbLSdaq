@@ -26,6 +26,9 @@ void int_handler(int x) {
     stop = true;
 }
 
+void usr1_handler(int x) {}
+
+
 typedef struct {
     vector<Buffer*> *buffers;
     Dispatcher* dispatcher;
@@ -38,20 +41,6 @@ typedef struct {
 void *dispatch_thread(void *_data) {
     signal(SIGINT,int_handler);
     dispatch_thread_data* data = (dispatch_thread_data*)_data;
-
-    /* FIXME
-    string path = "/home/eos/ejc/socket/socket";
-    int sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
-    char _path[256];
-    sprintf(_path, "%s", path.c_str());
-    struct sockaddr_un saddr;
-    saddr.sun_family = AF_UNIX;
-    sprintf(saddr.sun_path, "%s", path.c_str());
-    if (connect(sockfd, (struct sockaddr*) &saddr, sizeof(saddr)) < 0){
-         cerr << "error during socket connection";
-         pthread_exit(NULL);
-    }
-    */
 
     vector<size_t> evtsReady(data->buffers->size());
     data->runtype->begin();

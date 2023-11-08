@@ -14,13 +14,35 @@ SocketDispatcher::SocketDispatcher(size_t _nEvents,
     this->path = _path;
     this->queued = vector<size_t>(_nStreams, 0);
 
-    this-> sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
-    struct sockaddr_un saddr;
-    saddr.sun_family = AF_UNIX;
-    sprintf(saddr.sun_path, "%s", this->path.c_str());
-    if (connect(sockfd, (struct sockaddr*) &saddr, sizeof(saddr)) < 0){
-         cerr << "error during socket connection:"
-              << endl;
+    int domain = AF_INET;
+    int portno = 8765;
+
+    this->sockfd = socket(domain, SOCK_STREAM, 0);
+    int s;
+
+    switch (domain) {
+      case AF_UNIX: {
+        struct sockaddr_un saddr;
+        saddr.sun_family = AF_UNIX;
+        sprintf(saddr.sun_path, "%s", this->path.c_str());
+        s = connect(sockfd, (struct sockaddr*) &saddr, sizeof(saddr));
+	break;
+      }
+      case AF_INET: {
+        cerr << "eh?" << endl;
+        struct sockaddr_in saddr;
+	saddr.sin_family = AF_INET;
+        saddr.sin_addr.s_addr = INADDR_ANY;
+        saddr.sin_port = htons(portno);
+        s = connect(sockfd, (struct sockaddr*) &saddr, sizeof(saddr));
+	break;
+      }
+      default:
+        pthread_exit(NULL);
+    }
+
+    if (s < 0) {
+        cerr << "error during socket connection:" << endl;
         if (errno == EACCES){
             cerr << "\t"
                  << "EACCES: "
@@ -128,7 +150,6 @@ void SocketDispatcher::Dispatch(vector<Buffer*>& buffers){
     // TODO assert queued.size() == buffers.size()
     string path = this->NextPath();
     cout << "Flushing data to " << path << endl;
-    
     for (size_t i = 0 ; i < buffers.size() ; i++){
         size_t writeable = buffers[i]->fill();
         size_t written = send(sockfd,
