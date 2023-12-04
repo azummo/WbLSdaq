@@ -16,35 +16,10 @@
  */
  
 #include "Digitizer.hh"
-
     
-DigitizerSettings::DigitizerSettings(std::string _index) : index(_index) {
-
-}
-
-DigitizerSettings::~DigitizerSettings() {
-
-}
-
-Digitizer::Digitizer(BoardCommManager &bridge, uint32_t baseaddr) : VMECard(bridge, baseaddr) {
-
-}
-
-Digitizer::~Digitizer() {
-
-}
-
 size_t Digitizer::readoutBLT(char *buffer, size_t buffer_size) {
     size_t offset = 0, size = 0;
-//  while (offset < buffer_size && (size = readBLT(0x0000, buffer+offset, 4096))) {
-//      offset += size;
-//  }
     size = readBLT(0x0000, buffer+offset, buffer_size);
     return size;
 }
 
-Decoder::~Decoder(){
-    /**/
-}
-
-void Decoder::dispatch(int nfd, int *fds) { }

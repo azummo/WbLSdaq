@@ -15,6 +15,9 @@
  *  along with WbLSdaq. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef V1730__hh
+#define V1730__hh
+
 #include <map>
 #include <vector>
 #include <string>
@@ -24,9 +27,6 @@
 #include "Digitizer.hh"
 #include "RunDB.hh"
 #include "json.hh"
-
-#ifndef V1730__hh
-#define V1730__hh
 
 typedef struct {
 
@@ -237,14 +237,16 @@ class V1730Decoder : public Decoder {
         V1730Decoder(size_t eventBuffer, V1730Settings &settings);
         
         virtual ~V1730Decoder();
-        
+
         virtual void decode(Buffer &buffer);
         
         virtual size_t eventsReady();
         
         virtual void writeOut(H5::H5File &file, size_t nEvents);
         
-        virtual void dispatch(int nfd, int *fds);
+        virtual DigitizerSettings* getSettings() { return &settings; }
+
+        virtual void pack(DigitizerData* data, size_t nEvents);
 
     protected:
         

@@ -9,6 +9,8 @@
 #include <CONETNetwork.hh>
 #include <VMEBridge.hh>
 #include <Dispatcher.hh>
+#include <TCPDispatcher.hh>
+#include <ZMQDispatcher.hh>
 #include <LegacyHDF5Dispatcher.hh>
 #include <SocketDispatcher.hh>
 #include <SoftwareTrigger.hh>
@@ -271,6 +273,16 @@ void *readout(void *_data){
         int nEvents = run["events"].cast<int>();
         string path = run["outfile"].cast<string>();
         dispatcher = new SocketDispatcher(nEvents, path, buffers.size());
+    }
+    else if (dispstr == "zmq"){
+        int nEvents = run["events"].cast<int>();
+        string address = run["address"].cast<string>();
+        dispatcher = new ZMQDispatcher(nEvents, address, decoders);
+    }
+    else if (dispstr == "tcp"){
+        int nEvents = run["events"].cast<int>();
+        int port = run["port"].cast<int>();
+        dispatcher = new TCPDispatcher(nEvents, port, decoders);
     }
     if (!dispatcher){
         cerr << "error: dispatcher type "
