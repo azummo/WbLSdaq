@@ -594,6 +594,7 @@ void V1730Decoder::pack(DigitizerData* ddd, size_t nEvents) {
     memcpy(&data.exttimetags, exttimetags.data(), nEvents*sizeof(uint16_t));
 
     timetags.erase(timetags.begin(), timetags.begin() + nEvents);
+    exttimetags.erase(exttimetags.begin(), exttimetags.begin() + nEvents);
     counters.erase(counters.begin(), counters.begin() + nEvents);
 
     for (size_t i = 0; i < nsamples.size(); i++) {
