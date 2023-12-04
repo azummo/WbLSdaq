@@ -41,7 +41,8 @@ V1730Settings::V1730Settings() : DigitizerSettings("") {
     card.external_trg_out = 0; // 1 bit
     card.software_trg_out = 0; // 1 bit
     card.max_board_evt_blt = 5;
-    
+    card.use_ettt = 0; // 1 bit
+
     for (uint32_t ch = 0; ch < 16; ch++) {
         chanDefaults(ch);
     }
@@ -80,6 +81,9 @@ V1730Settings::V1730Settings(RunTable &digitizer, RunDB &db) : DigitizerSettings
     card.external_trg_out = digitizer["external_trigger_out"].cast<bool>() ? 1 : 0; // 1 bit
     card.software_trg_out = digitizer["external_trigger_out"].cast<bool>() ? 1 : 0; // 1 bit
     card.max_board_evt_blt = digitizer["events_per_transfer"].cast<int>();
+
+// ATB add ETTT option
+    card.use_ettt = digitizer["use_ettt"].cast<bool>() ? 1 : 0; // 1 bit
 
     for (int ch = 0; ch < 16; ch++) {
         if (ch%2 == 0) {
@@ -189,6 +193,7 @@ bool V1730::program(DigitizerSettings &_settings) {
                         // 0x00040000 == TRGOUT
                         // 0x00050000 == CLKOUT    fires at 125  MHz
                         // 0x00090000 == CLK phase fires at 62.5 MHz
+    data |= (settings.card.use_ettt << 22); // ETTT or LVDS pattern
     write32(REG_FRONT_PANEL_CONTROL,data);
     
     //LVDS new features config
@@ -350,6 +355,7 @@ V1730Decoder::V1730Decoder(size_t _eventBuffer, V1730Settings &_settings) : even
     
     counters = vector<uint32_t>();
     timetags = vector<uint32_t>();
+    exttimetags = vector<uint16_t>();
     for (size_t ch = 0; ch < 16; ch++) {
         if (settings.getEnabled(ch)) {
             chan2idx[ch] = nsamples.size();
@@ -442,6 +448,8 @@ void V1730Decoder::writeOut(H5File &file, size_t nEvents) {
     counters_ds.write(&data.counters, PredType::NATIVE_UINT32);
     DataSet timetags_ds = cardgroup.createDataSet("timetags", PredType::NATIVE_UINT32, space);
     timetags_ds.write(&data.timetags, PredType::NATIVE_UINT32);
+    DataSet exttimetags_ds = cardgroup.createDataSet("exttimetags", PredType::NATIVE_UINT16, space);
+    exttimetags_ds.write(&data.exttimetags, PredType::NATIVE_UINT16);
     
     for (size_t i = 0; i < nsamples.size(); i++) {
         DigitizerData::ChannelData& ch = data.channels[i];
@@ -543,15 +551,16 @@ uint32_t* V1730Decoder::decode_board_agg(uint32_t *boardagg) {
         throw runtime_error("board fail flag set. check with an expert.");
     }
     //const uint16_t pattern = (boardagg[1] >> 8) & 0x7FFF;
-    const uint16_t pattern = (boardagg[1] >> 8) & 0xFFFF; // this has been changed
+    const uint16_t pattern = settings.getETTTEnabled() ? 0 : ((boardagg[1] >> 8) & 0xFFFF); // this has been changed; 0 if ETTT mode, else LVDS I/O pattern
     const uint16_t mask = (boardagg[1] & 0xFF) | ((boardagg[2] & 0xFF000000) >> 16);
     //const uint32_t mask = boardagg[1] & 0xFF; // question about the mask -> here we only take 8 masks but in the document, there are 16, we are only taking half of this. Ed's comment: I agree with you that this looks like a bug, but I actually doubt it is. we can do an easy test to determine whether it is or not. for now I would recommend not messing with it at that level, and only change the decoding in decode_chan_aggs to match the channel event structure.
 
     const uint32_t counter = static_cast<uint32_t>(boardagg[2] & 0x00FFFFFF);
     const uint32_t timetag = boardagg[3];
+    const uint16_t exttimetag = settings.getETTTEnabled() ? ((boardagg[1] >> 8) & 0xFFFF) : 0 ; // ETTT bits if ETTT mode, else 0
     counters.push_back(counter);
     timetags.push_back(timetag);
-
+    exttimetags.push_back(exttimetag);
 //  cout << "\t(LVDS & 0xFF): " << (pattern & 0xFF) << endl;
     
     //const uint32_t count = boardagg[2] & 0x7FFFFF;
@@ -582,6 +591,7 @@ void V1730Decoder::pack(DigitizerData* ddd, size_t nEvents) {
 
     memcpy(&data.counters, counters.data(), nEvents*sizeof(uint32_t));
     memcpy(&data.timetags, timetags.data(), nEvents*sizeof(uint32_t));
+    memcpy(&data.exttimetags, exttimetags.data(), nEvents*sizeof(uint16_t));
 
     timetags.erase(timetags.begin(), timetags.begin() + nEvents);
     counters.erase(counters.begin(), counters.begin() + nEvents);
