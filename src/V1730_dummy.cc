@@ -19,11 +19,11 @@
 #include <iostream>
 #include <stdexcept>
  
-#include "V1730_dpppsd.hh"
+#include "V1730_dummy.hh"
 
 using namespace std;
 
-V1730_DPPSettings::V1730_DPPSettings() : DigitizerSettings("") {
+V1730_dummySettings::V1730_dummySettings() : DigitizerSettings("") {
     //These are "do nothing" defaults
     card.dual_trace = 0; // 1 bit
     card.analog_probe = 0; // 2 bit (see docs)
@@ -46,7 +46,7 @@ V1730_DPPSettings::V1730_DPPSettings() : DigitizerSettings("") {
     
 }
 
-V1730_DPPSettings::V1730_DPPSettings(RunTable &digitizer, RunDB &db) : DigitizerSettings(digitizer.getIndex()){
+V1730_dummySettings::V1730_dummySettings(RunTable &digitizer, RunDB &db) : DigitizerSettings(digitizer.getIndex()){
     
     card.dual_trace = 0; // 1 bit
     card.analog_probe = 0; // 2 bit (see docs)
@@ -96,7 +96,6 @@ V1730_DPPSettings::V1730_DPPSettings(RunTable &digitizer, RunDB &db) : Digitizer
             cout << "\t" << chname << endl;
             RunTable channel = db.getTable(chname,index);
     
-            chans[ch].dynamic_range = 0; // 1 bit
             chans[ch].fixed_baseline = 0; // 12 bit
             
             chans[ch].enabled = channel["enabled"].cast<bool>() ? 1 : 0; //1 bit
@@ -113,15 +112,20 @@ V1730_DPPSettings::V1730_DPPSettings(RunTable &digitizer, RunDB &db) : Digitizer
             chans[ch].shaped_trigger_width = channel["shaped_trigger_width"].cast<int>(); // 10 bit
             chans[ch].trigger_holdoff = channel["trigger_holdoff"].cast<int>(); // 10* bit
             chans[ch].trigger_config = channel["trigger_type"].cast<int>(); // 2 bit (see docs)
+	    chans[ch].dynamic_range = channel["dynamic_range"].cast<int>(); // 1 bit (see docs 0->2Vpp, 1->0.5Vpp)
         }
     }
+
+    // ejc
+    this->address = static_cast<uint32_t>(digitizer["address"].cast<int>());
+    this->word	  = static_cast<uint32_t>(digitizer["word"].cast<int>());
 }
 
-V1730_DPPSettings::~V1730_DPPSettings() {
+V1730_dummySettings::~V1730_dummySettings() {
 
 }
         
-void V1730_DPPSettings::validate() { //FIXME validate bit fields too
+void V1730_dummySettings::validate() { //FIXME validate bit fields too
     for (int ch = 0; ch < 16; ch++) {
         if (ch % 2 == 0) {
             if (groups[ch/2].record_length > 65535) throw runtime_error("Number of samples exceeds 65535 (gr " + to_string(ch/2) + ")");
@@ -129,8 +133,8 @@ void V1730_DPPSettings::validate() { //FIXME validate bit fields too
             if (groups[ch/2].ev_per_buffer > 1023) throw runtime_error("Number of events per channel buffer exceeds 1023 (gr " + to_string(ch/2) + ")");
         }
         if (chans[ch].pre_trigger > 2044) throw runtime_error("Pre trigger samples exceeds 2044 (ch " + to_string(ch) + ")");
-        if (chans[ch].short_gate > 4095) throw runtime_error("Short gate samples exceeds 4095 (ch " + to_string(ch) + ")");
-        if (chans[ch].long_gate > 4095) throw runtime_error("Long gate samples exceeds 4095 (ch " + to_string(ch) + ")");
+//      if (chans[ch].short_gate > 4095) throw runtime_error("Short gate samples exceeds 4095 (ch " + to_string(ch) + ")");
+//      if (chans[ch].long_gate > 4095) throw runtime_error("Long gate samples exceeds 4095 (ch " + to_string(ch) + ")");
         if (chans[ch].gate_offset > 255) throw runtime_error("Gate offset samples exceeds 255 (ch " + to_string(ch) + ")");
         if (chans[ch].pre_trigger < chans[ch].gate_offset + 19) throw runtime_error("Gate offset and pre_trigger relationship violated (ch " + to_string(ch) + ")");
         if (chans[ch].trg_threshold > 4095) throw runtime_error("Trigger threshold exceeds 4095 (ch " + to_string(ch) + ")");
@@ -141,13 +145,10 @@ void V1730_DPPSettings::validate() { //FIXME validate bit fields too
     }
 }
 
-void V1730_DPPSettings::chanDefaults(uint32_t ch) {
+void V1730_dummySettings::chanDefaults(uint32_t ch) {
     chans[ch].enabled = 0; //1 bit
     chans[ch].dynamic_range = 0; // 1 bit
     chans[ch].pre_trigger = 30; // 9* bit
-    chans[ch].long_gate = 20; // 12 bit
-    chans[ch].short_gate = 10; // 12 bit
-    chans[ch].gate_offset = 5; // 8 bit
     chans[ch].trg_threshold = 100; // 12 bit
     chans[ch].fixed_baseline = 0; // 12 bit
     chans[ch].shaped_trigger_width = 10; // 10 bit
@@ -160,7 +161,7 @@ void V1730_DPPSettings::chanDefaults(uint32_t ch) {
     chans[ch].dc_offset = 0x8000; // 16 bit (-1V to 1V)
 }
 
-void V1730_DPPSettings::groupDefaults(uint32_t gr) {
+void V1730_dummySettings::groupDefaults(uint32_t gr) {
     groups[gr].local_logic = 3; // 2 bit
     groups[gr].valid_logic = 3; // 2 bit
     groups[gr].global_trigger = 0; // 1 bit
@@ -169,167 +170,63 @@ void V1730_DPPSettings::groupDefaults(uint32_t gr) {
     groups[gr].ev_per_buffer = 50; // 10 bit
 }
 
-V1730_DPP::V1730_DPP(BoardCommManager &_bridge, uint32_t _baseaddr) : Digitizer(_bridge,_baseaddr) {
+V1730_dummy::V1730_dummy(VMEBridge &_bridge, uint32_t _baseaddr) : Digitizer(_bridge,_baseaddr) {
 
 }
 
-V1730_DPP::~V1730_DPP() {
+V1730_dummy::~V1730_dummy() {
     //Fully reset the board just in case
     write32(REG_BOARD_CONFIGURATION_RELOAD,0);
 }
 
-void V1730_DPP::calib() {
+void V1730_dummy::calib() {
     write32(REG_CHANNEL_CALIB,0xAAAAAAAA);
 }
 
-bool V1730_DPP::program(DigitizerSettings &_settings) {
-    V1730_DPPSettings &settings = dynamic_cast<V1730_DPPSettings&>(_settings);
+bool V1730_dummy::program(DigitizerSettings &_settings) {
+    V1730_dummySettings &settings = dynamic_cast<V1730_dummySettings&>(_settings);
     try {
         settings.validate();
     } catch (runtime_error &e) {
-        cout << "Could not program V1730_DPP: " << e.what() << endl;
+        cout << "Could not program V1730_dummy: " << e.what() << endl;
         return false;
     }
 
-    //used to build bit fields
-    uint32_t data;
-    
-    //Fully reset the board just in case
-    write32(REG_BOARD_CONFIGURATION_RELOAD,0);
-    
-    //Front panel config
-    data = (1<<0) //ttl
-         | (0<<2) | (0<<3) | (0<<4) | (0<<5) //LVDS all input
-         | (2<<6) // pattern mode
-         | (0<<8) // old lvds features
-         | (0<<9);// latch on internal trigger 
-    write32(REG_FRONT_PANEL_CONTROL,data);
-    
-    //LVDS new features config
-    data = (0<<0) | (0<<4) | (0<<8) | (0<<12); // ignored for now
-    write32(REG_LVDS_NEW_FEATURES,data);
+//  write32(REG_BOARD_CONFIGURATION_RELOAD,0);
 
-    data = (1 << 2) //individual trigger propagation
-         | (1 << 4) //reserved
-         | (1 << 8) //individual trigger (reserved)
-         | (settings.card.dual_trace << 11) 
-         | (settings.card.analog_probe << 12) 
-         | (settings.card.oscilloscope_mode << 16) 
-         | (1 << 17) //enable extras
-         | (1 << 18) //time stamp (reserved)
-         | (1 << 19) //charge record (reserved)
-         | (settings.card.digital_virt_probe_1 << 23)
-         | (settings.card.digital_virt_probe_2 << 26);
-    write32(REG_CONFIG,data);
-
-    //build masks while configuring channels
-    uint32_t channel_enable_mask = 0;
-    uint32_t global_trigger_mask = (settings.card.coincidence_window << 20)
-                                 | (settings.card.global_majority_level << 24) 
-                                 | (settings.card.external_global_trigger << 30) 
-                                 | (settings.card.software_global_trigger << 31);
-    uint32_t trigger_out_mask = (settings.card.out_logic << 8) 
-                              | (settings.card.out_majority_level << 10)
-                              | (settings.card.external_trg_out << 30) 
-                              | (settings.card.software_trg_out << 31);
-    
-    //keep track of the size of the buffers for each memory location
-    uint32_t buffer_sizes[8] = { 0, 0, 0, 0, 0, 0, 0, 0}; //in locations
-
-    for (int ch = 0; ch < 16; ch++) {
-        channel_enable_mask |= (settings.chans[ch].enabled << ch);
-        
-        if (ch % 2 == 0) {
-            global_trigger_mask |= (settings.groups[ch/2].global_trigger << (ch/2));
-            trigger_out_mask |= (settings.groups[ch/2].trg_out << (ch/2));
-            
-            data = settings.groups[ch/2].record_length%8 ?  settings.groups[ch/2].record_length/8+1 : settings.groups[ch/2].record_length/8;
-            write32(REG_RECORD_LENGTH|(ch<<8),data);
-            settings.groups[ch/2].record_length = read32(REG_RECORD_LENGTH|(ch<<8))*8;
-            
-            data = settings.groups[ch/2].valid_mask
-                 | (settings.groups[ch/2].valid_mode << 8)
-                 | (settings.groups[ch/2].valid_majority << 10);
-            write32(REG_LOCAL_VALIDATION+(ch/2*4),data);
-        } else {
-            write32(REG_RECORD_LENGTH|(ch<<8),settings.groups[ch/2].record_length/8);
-        }
-        
-        if (settings.chans[ch].enabled) {
-            buffer_sizes[ch/2] = (2 + settings.groups[ch/2].record_length/8)*settings.groups[ch/2].ev_per_buffer;
-        }
-        
-        write32(REG_NEV_AGGREGATE|(ch<<8),settings.groups[ch/2].ev_per_buffer);
-        write32(REG_PRE_TRG|(ch<<8),settings.chans[ch].pre_trigger/4);
-        write32(REG_SHORT_GATE|(ch<<8),settings.chans[ch].short_gate);
-        write32(REG_LONG_GATE|(ch<<8),settings.chans[ch].long_gate);
-        write32(REG_PRE_GATE|(ch<<8),settings.chans[ch].gate_offset);
-        write32(REG_DPP_TRG_THRESHOLD|(ch<<8),settings.chans[ch].trg_threshold);
-        write32(REG_BASELINE_THRESHOLD|(ch<<8),settings.chans[ch].fixed_baseline);
-        write32(REG_SHAPED_TRIGGER_WIDTH|(ch<<8),settings.chans[ch].shaped_trigger_width);
-        write32(REG_TRIGGER_HOLDOFF|(ch<<8),settings.chans[ch].trigger_holdoff/4);
-        data = (settings.chans[ch].charge_sensitivity)
-             | (settings.chans[ch].pulse_polarity << 16)
-             | (settings.chans[ch].trigger_config << 18)
-             | (settings.chans[ch].baseline_mean << 20)
-             | (settings.chans[ch].self_trigger << 24);
-        write32(REG_DPP_CTRL|(ch<<8),data);
-        data = (settings.groups[ch/2].local_logic<<0) 
-             | (1<<2) // enable request logic
-             | (settings.groups[ch/2].valid_logic<<4)
-             | (1<<6); // enable valid logic
-        write32(REG_TRIGGER_CTRL|(ch<<8),data);
-        write32(REG_DC_OFFSET|(ch<<8),settings.chans[ch].dc_offset);
-        
-    }
-    
-    write32(REG_CHANNEL_ENABLE_MASK,channel_enable_mask);
-    write32(REG_GLOBAL_TRIGGER_MASK,global_trigger_mask);
-    write32(REG_TRIGGER_OUT_MASK,trigger_out_mask);
-    
-    uint32_t largest_buffer = 0;
-    for (int i = 0; i < 8; i++) if (largest_buffer < buffer_sizes[i]) largest_buffer = buffer_sizes[i];
-    const uint32_t total_locations = 640000/8; 
-    const uint32_t num_buffers = total_locations%largest_buffer ? total_locations/largest_buffer : total_locations/largest_buffer+1;
-    uint32_t shifter = num_buffers;
-    for (settings.card.buff_org = 0; shifter != 1; shifter = shifter >> 1, settings.card.buff_org++);
-    if (1u << settings.card.buff_org > num_buffers) settings.card.buff_org--;
-    if (settings.card.buff_org > 0xA) settings.card.buff_org = 0xA;
-    if (settings.card.buff_org < 0x2) settings.card.buff_org = 0x2;
-    cout << "Largest buffer: " << largest_buffer << " loc\nDesired buffers: " << num_buffers << "\nProgrammed buffers: " << (1<<settings.card.buff_org) << endl;
-    write32(REG_BUFF_ORG,settings.card.buff_org);
+    write32(settings.address, settings.word);
     
     //Set max board aggregates to transver per readout
-    write16(REG_READOUT_BLT_AGGREGATE_NUMBER,settings.card.max_board_agg_blt);
+//  write16(REG_READOUT_BLT_AGGREGATE_NUMBER,settings.card.max_board_agg_blt);
     
     //Enable VME BLT readout
-    write16(REG_READOUT_CONTROL,1<<4);
+//  write16(REG_READOUT_CONTROL,1<<4);
     
     return true;
 }
 
-void V1730_DPP::softTrig() {
+void V1730_dummy::softTrig() {
     write32(REG_SOFTWARE_TRIGGER,0xDEADBEEF);
 }
 
-void V1730_DPP::startAcquisition() {
+void V1730_dummy::startAcquisition() {
     write32(REG_ACQUISITION_CONTROL,1<<2);
 }
 
-void V1730_DPP::stopAcquisition() {
+void V1730_dummy::stopAcquisition() {
     write32(REG_ACQUISITION_CONTROL,0);
 }
 
-bool V1730_DPP::acquisitionRunning() {
+bool V1730_dummy::acquisitionRunning() {
     return read32(REG_ACQUISITION_STATUS) & (1 << 2);
 }
 
-bool V1730_DPP::readoutReady() {
+bool V1730_dummy::readoutReady() {
     return read32(REG_ACQUISITION_STATUS) & (1 << 3);
 }
 
 
-bool V1730_DPP::checkTemps(vector<uint32_t> &temps, uint32_t danger) {
+bool V1730_dummy::checkTemps(vector<uint32_t> &temps, uint32_t danger) {
     temps.resize(16);
     bool over = false;
     for (int ch = 0; ch < 16; ch++) {
@@ -339,7 +236,7 @@ bool V1730_DPP::checkTemps(vector<uint32_t> &temps, uint32_t danger) {
     return over;
 }
 
-size_t V1730_DPP::readoutBLT_evtsz(char *buffer, size_t buffer_size) {
+size_t V1730_dummy::readoutBLT_evtsz(char *buffer, size_t buffer_size) {
     size_t offset = 0, total = 0;
     while (readoutReady()) {
         uint32_t next = read32(REG_EVENT_SIZE);
@@ -366,7 +263,7 @@ size_t V1730_DPP::readoutBLT_evtsz(char *buffer, size_t buffer_size) {
 
 
 
-V1730_DPPDecoder::V1730_DPPDecoder(size_t _eventBuffer, V1730_DPPSettings &_settings) : eventBuffer(_eventBuffer), settings(_settings) {
+V1730_dummyDecoder::V1730_dummyDecoder(size_t _eventBuffer, V1730_dummySettings &_settings) : eventBuffer(_eventBuffer), settings(_settings) {
 
     dispatch_index = decode_counter = chanagg_counter = boardagg_counter = 0;
     
@@ -391,7 +288,7 @@ V1730_DPPDecoder::V1730_DPPDecoder(size_t _eventBuffer, V1730_DPPSettings &_sett
 
 }
 
-V1730_DPPDecoder::~V1730_DPPDecoder() {
+V1730_dummyDecoder::~V1730_dummyDecoder() {
     for (size_t i = 0; i < grabs.size(); i++) {
         delete [] grabs[i];
         delete [] patterns[i];
@@ -402,27 +299,27 @@ V1730_DPPDecoder::~V1730_DPPDecoder() {
     }
 }
 
-void V1730_DPPDecoder::decode(Buffer &buf) {
-    vector<size_t> lastgrabbed(grabbed);
-    
-    decode_size = buf.fill();
-    cout << settings.getIndex() << " decoding " << decode_size << " bytes." << endl;
-    uint32_t *next = (uint32_t*)buf.rptr(), *start = (uint32_t*)buf.rptr();
-    while ((size_t)((next = decode_board_agg(next)) - start + 1)*4 < decode_size);
-    buf.dec(decode_size);
-    decode_counter++;
-    
-    struct timespec cur_time;
-    clock_gettime(CLOCK_MONOTONIC,&cur_time);
-    double time_int = (cur_time.tv_sec - last_decode_time.tv_sec)+1e-9*(cur_time.tv_nsec - last_decode_time.tv_nsec);
-    last_decode_time = cur_time;
-    
-    for (size_t i = 0; i < idx2chan.size(); i++) {
-        cout << "\tch" << idx2chan[i] << "\tev: " << grabbed[i]-lastgrabbed[i] << " / " << (grabbed[i]-lastgrabbed[i])/time_int << " Hz / " << grabbed[i] << " total" << endl;
-    }
+void V1730_dummyDecoder::decode(Buffer &buf) {
+//  vector<size_t> lastgrabbed(grabbed);
+//  
+//  decode_size = buf.fill();
+//  cout << settings.getIndex() << " decoding " << decode_size << " bytes." << endl;
+//  uint32_t *next = (uint32_t*)buf.rptr(), *start = (uint32_t*)buf.rptr();
+//  while ((size_t)((next = decode_board_agg(next)) - start + 1)*4 < decode_size);
+//  buf.dec(decode_size);
+//  decode_counter++;
+//  
+//  struct timespec cur_time;
+//  clock_gettime(CLOCK_MONOTONIC,&cur_time);
+//  double time_int = (cur_time.tv_sec - last_decode_time.tv_sec)+1e-9*(cur_time.tv_nsec - last_decode_time.tv_nsec);
+//  last_decode_time = cur_time;
+//  
+//  for (size_t i = 0; i < idx2chan.size(); i++) {
+//      cout << "\tch" << idx2chan[i] << "\tev: " << grabbed[i]-lastgrabbed[i] << " / " << (grabbed[i]-lastgrabbed[i])/time_int << " Hz / " << grabbed[i] << " total" << endl;
+//  }
 }
 
-size_t V1730_DPPDecoder::eventsReady() {
+size_t V1730_dummyDecoder::eventsReady() {
     size_t grabs = grabbed[0];
     for (size_t idx = 1; idx < grabbed.size(); idx++) {
         if (grabbed[idx] < grabs) grabs = grabbed[idx];
@@ -432,7 +329,7 @@ size_t V1730_DPPDecoder::eventsReady() {
 
 // length, lvdsidx, dsize, nsamples, samples[], strlen, strname[]
 
-void V1730_DPPDecoder::dispatch(int nfd, int *fds) {
+void V1730_dummyDecoder::dispatch(int nfd, int *fds) {
     
     size_t ready = eventsReady();
     
@@ -460,7 +357,7 @@ void V1730_DPPDecoder::dispatch(int nfd, int *fds) {
 
 using namespace H5;
 
-void V1730_DPPDecoder::writeOut(H5File &file, size_t nEvents) {
+void V1730_dummyDecoder::writeOut(H5File &file, size_t nEvents) {
 
     cout << "\t/" << settings.getIndex() << endl;
 
@@ -547,71 +444,46 @@ void V1730_DPPDecoder::writeOut(H5File &file, size_t nEvents) {
     if (dispatch_index < 0) dispatch_index = 0;
 }
 
-uint32_t* V1730_DPPDecoder::decode_chan_agg(uint32_t *chanagg, uint32_t group, uint16_t pattern) {
+uint32_t* V1730_dummyDecoder::decode_chan_agg(uint32_t *chanagg, uint32_t chn, uint16_t pattern) {
+
     const bool format_flag = chanagg[0] & 0x80000000;
     if (!format_flag) throw runtime_error("Channel format not found");
     
     chanagg_counter++;
+   
+    //const uint32_t size = chanagg[0] & 0x7FFF;
+    //const uint32_t format = chanagg[1];
+    //const uint32_t samples = (format & 0xFFF)*8;
+   
     
-    const uint32_t size = chanagg[0] & 0x7FFF;
-    const uint32_t format = chanagg[1];
-    const uint32_t samples = (format & 0xFFF)*8;
-    
-    /*
-    //Metadata
-    const bool dualtrace_enable = format & (1<<31);
-    const bool charge_enable =format & (1<<30);
-    const bool time_enable = format & (1<<29);
-    const bool baseline_enable = format & (1<<28);
-    const bool waveform_enable = format & (1<<27);
-    const uint32_t extras = (format >> 24) & 0x7;
-    const uint32_t analog_probe = (format >> 22) & 0x3;
-    const uint32_t digital_probe_2 = (format >> 19) & 0x7;
-    const uint32_t digital_probe_1 = (format >> 16) & 0x7;
-    */
-    
-    const uint32_t idx0 = chan2idx.count(group * 2 + 0) ? chan2idx[group * 2 + 0] : 999;
-    const uint32_t idx1 = chan2idx.count(group * 2 + 1) ? chan2idx[group * 2 + 1] : 999;
-    
-    for (uint32_t *event = chanagg+2; (size_t)(event-chanagg+1) < size; event += samples/2+3) {
+    const uint32_t idx = chan2idx[chn];
+    const uint32_t len = nsamples[idx];
+
+    if (idx == 999) throw runtime_error("Received data for disabled channel (" + to_string(chn) + ")");
+
+    //if (len != samples) throw runtime_error("Number of samples received " + to_string(samples) + " does not match expected " + to_string(len) + " (" + to_string(idx2chan[idx]) + ")");
         
-        const bool oddch = event[0] & 0x80000000;
-        const uint32_t idx = oddch ? idx1 : idx0;
-        const uint32_t len = nsamples[idx];
-        
-        if (idx == 999) throw runtime_error("Received data for disabled channel (" + to_string(group*2+oddch?1:0) + ")");
-        
-        if (len != samples) throw runtime_error("Number of samples received " + to_string(samples) + " does not match expected " + to_string(len) + " (" + to_string(idx2chan[idx]) + ")");
-        
-        if (eventBuffer) {
-            const size_t ev = grabbed[idx]++;
-            if (ev == eventBuffer) throw runtime_error("Decoder buffer for " + settings.getIndex() + " overflowed!");
-            uint16_t *data = grabs[idx] + ev*len;
-            
-            for (uint32_t *word = event+1, sample = 0; sample < len; word++, sample+=2) {
-                data[sample+0] = *word & 0x3FFF;
-                //uint8_t dp10 = (*word >> 14) & 0x1;
-                //uint8_t dp20 = (*word >> 15) & 0x1;
+    if (eventBuffer) {
+        const size_t ev = grabbed[idx]++;
+        if (ev == eventBuffer) throw runtime_error("Decoder buffer for " + settings.getIndex() + " overflowed!");
+        uint16_t *data = grabs[idx] + ev*len;
+        //for (uint32_t *word = event+1, sample = 0; sample < len; word++, sample+=2) {
+	for (uint32_t *word = chanagg, sample = 0; sample < len; word++, sample+=2) {
+      	        data[sample+0] = *word & 0x3FFF;
                 data[sample+1] = (*word >> 16) & 0x3FFF;
-                //uint8_t dp11 = (*word >> 30) & 0x1;
-                //uint8_t dp21 = (*word >> 31) & 0x1;
-            }
-            
-            patterns[idx][ev] = pattern;
-            baselines[idx][ev] = event[1+samples/2+0] & 0xFFFF;
-            qshorts[idx][ev] = event[1+samples/2+1] & 0x7FFF;
-            qlongs[idx][ev] = (event[1+samples/2+1] >> 16) & 0xFFFF;
-            times[idx][ev] = ((uint64_t)(event[0] & 0x7FFFFFFF)) | (((uint64_t)(event[1+samples/2+0]&0xFFFF0000))<<15);
-        } else {
-            grabbed[idx]++;
         }
-    
+            
+        patterns[idx][ev] = pattern;
+    } else {
+        grabbed[idx]++;
     }
     
-    return chanagg + size;
+    //return chanagg + size;
+    return chanagg + len/2;
+
 }
 
-uint32_t* V1730_DPPDecoder::decode_board_agg(uint32_t *boardagg) {
+uint32_t* V1730_dummyDecoder::decode_board_agg(uint32_t *boardagg) {
     if (boardagg[0] == 0xFFFFFFFF) {
         boardagg++; //sometimes padded
     }
@@ -624,9 +496,11 @@ uint32_t* V1730_DPPDecoder::decode_board_agg(uint32_t *boardagg) {
     
     //const uint32_t board = (boardagg[1] >> 28) & 0xF;
     //const bool fail = boardagg[1] & (1 << 26);
-    const uint16_t pattern = (boardagg[1] >> 8) & 0x7FFF;
-    const uint32_t mask = boardagg[1] & 0xFF;
-    
+    //const uint16_t pattern = (boardagg[1] >> 8) & 0x7FFF;
+    const uint16_t pattern = (boardagg[1] >> 8) & 0xFFFF; // this has been changed
+    const uint16_t mask = (boardagg[1] & 0xFF) | ((boardagg[2] & 0xFF000000) >> 16);
+    //const uint32_t mask = boardagg[1] & 0xFF; // question about the mask -> here we only take 8 masks but in the document, there are 16, we are only taking half of this. Ed's comment: I agree with you that this looks like a bug, but I actually doubt it is. we can do an easy test to determine whether it is or not. for now I would recommend not messing with it at that level, and only change the decoding in decode_chan_aggs to match the channel event structure.
+
     cout << "\t(LVDS & 0xFF): " << (pattern & 0xFF) << endl;
     
     //const uint32_t count = boardagg[2] & 0x7FFFFF;
@@ -634,11 +508,12 @@ uint32_t* V1730_DPPDecoder::decode_board_agg(uint32_t *boardagg) {
     
     uint32_t *chans = boardagg+4;
     
-    for (uint32_t gr = 0; gr < 8; gr++) {
-        if (mask & (1 << gr)) {
-            chans = decode_chan_agg(chans,gr,pattern);
+    for (uint32_t ch = 0; ch < 16; ch++) { // note again, this only loops through 8 groups with 8 masks. We actually have 16 masks in the event structure.
+        if (mask & (1 << ch)) {
+            chans = decode_chan_agg(chans,ch,pattern);
         }
     } 
     
     return boardagg+size;
 }
+

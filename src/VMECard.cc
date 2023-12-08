@@ -17,7 +17,7 @@
  
 #include "VMECard.hh"
 
-VMECard::VMECard(VMEBridge &_bridge, uint32_t _baseaddr) : bridge(_bridge), baseaddr(_baseaddr) {
+VMECard::VMECard(BoardCommManager &_bridge, uint32_t _baseaddr) : bridge(_bridge), baseaddr(_baseaddr) {
 
 }
 

@@ -17,7 +17,7 @@
 
 #include <vector>
 
-#include "VMEBridge.hh"
+#include "BoardCommManager.hh"
 
 #ifndef VMECard__hh
 #define VMECard__hh
@@ -26,33 +26,33 @@ class VMECard {
 
     public:   
     
-        VMECard(VMEBridge &bridge, uint32_t baseaddr);
+        VMECard(BoardCommManager &bridge, uint32_t baseaddr);
         
         virtual ~VMECard();
     
     protected:
         
-        VMEBridge &bridge;
+        BoardCommManager &bridge;
         uint32_t baseaddr;
         
         inline void write16(uint32_t reg, uint32_t data) {
-            bridge.write16(baseaddr|reg,data);
+            bridge.write16(baseaddr,reg,data);
         }
         
         inline uint32_t read16(uint32_t reg) {
-            return bridge.read16(baseaddr|reg);
+            return bridge.read16(baseaddr,reg);
         }
         
         inline void write32(uint32_t reg, uint32_t data) {
-            bridge.write32(baseaddr|reg,data);
+            bridge.write32(baseaddr,reg,data);
         }
         
         inline uint32_t read32(uint32_t reg) {
-            return bridge.read32(baseaddr|reg);
+            return bridge.read32(baseaddr,reg);
         }
         
         inline uint32_t readBLT(uint32_t addr, void *buffer, uint32_t size) {
-            return bridge.readBLT(baseaddr|addr,buffer,size);
+            return bridge.readBLT(baseaddr,addr,buffer,size);
         }
         
 };

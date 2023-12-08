@@ -1,0 +1,537 @@
+{
+name: "RUN",                    // run settings
+//outfile: "/tmp/test.sock",      		    // file to save data to (appends .h5 automatically)
+outfile: "test"
+address: "tcp://*:8767",
+runtype: "manual",             // fixed # of events
+events: 2,                     // # of events per file
+repeat_times: 100,              // # of files
+event_buffer_size: 10000,       // # of events buffered per channel
+check_temps_every: 5,           // check temps of ADCs every X seconds 
+soft_trig: []                   // boards to software trigger
+}
+
+//{
+//name: "Dispatch",
+//index: "",
+//type: "legacy_hdf5"             // dispatch to hdf5 files
+//}
+
+ {
+ name: "Dispatch",
+ index: "",
+ type: "zmq"             // dispatch to unix socket
+ }
+
+{
+name: "Communication",          // defining a communication channel
+index: "optical-link-0",        // ID of communication channel
+type: "CONETNetwork",           // type of channel
+link_num: 0                     // link # to use
+}
+
+{
+name: "V1730",                  // V1730 global settings
+index: "serial-19857",          // To match card to subtables, data storage
+communication: "optical-link-0", // channel through which to access board
+base_address: 1,                // node # in CONET network
+record_length: 500,             // # of samples per waveform
+post_trigger: 25,                // wait this number * 4 samples before freezing current buffer
+buffer_size: 20,                // Readout circular buffer size in MiB
+coincidence_window: 0,          // time window for majority coincidence is this number * 8 ns
+global_majority_level: 0,       // this number + 1 requests required for global trigger
+external_trigger_enable: true, // trig in fires a global trigger
+external_trigger_out: true,    // route trig in to trig out
+software_trigger_enable: false,  // software trigger fires a global trigger
+software_trigger_out: false,    // route software trigger to trig out
+trig_out_logic: 0,              // Choose index [OR, AND, MAJORITY] how trigger requests fire trig out
+trig_out_majority_level: 0,     // trig_out_majority_level+1 requests required for trig out in MAJORITY mode
+trigger_overlap: 0,             // overlapping trigger windows [DISABLED, ENABLED]
+test_pattern: 0,                // triangular wave test pattern [DISABLED, ENABLED]
+trigger_polarity: 1,            // trigger on pulse going [OVER, UNDER] threshold
+events_per_transfer: 0x3FF,     // maximum board aggregates to read out during a single transfer
+}
+
+{
+name: "GR0",              // pairwise common settings
+index: "serial-19857",             // channel specific settings
+local_logic: 3,   // what to propagate as trigger requests [AND, EVEN, ODD, OR]
+request_duration: 0, // trigger request pulse duration [fixed width, over/under threshold]
+request_global_trigger: false, // send global trigger request on local trigger
+request_trig_out: false,        // send trigger out request on local trigger
+}
+
+{
+name: "CH0",            // for channel 0
+index: "serial-19857",             // channel specific settings
+enabled: true,           // record events from this channel
+dc_offset: 32767,       // volts to shift the input by (-1V to 1V)
+trigger_threshold: 8000, // counts past baseline to trigger
+shaped_trigger_width: 12,       // analog sum pulse width is this number times 8 ns
+dynamic_range: 1, // Choose index [2Vpp,0.5Vpp]
+}
+
+{
+name: "CH1",            // for channel 0
+index: "serial-19857",             // channel specific settings
+enabled: true,           // record events from this channel
+dc_offset: 32767,       // volts to shift the input by (-1V to 1V)
+trigger_threshold: 7500, // counts past baseline to trigger
+shaped_trigger_width: 12,       // analog sum pulse width is this number times 8 ns
+dynamic_range: 1, // Choose index [2Vpp,0.5Vpp]
+}
+
+{
+name: "GR1",              // pairwise common settings
+index: "serial-19857",             // channel specific settings
+local_logic: 3,   // what to propagate as trigger requests [AND, EVEN, ODD, OR]
+request_duration: 0, // trigger request pulse duration [fixed width, over/under threshold]
+request_global_trigger: false, // send global trigger request on local trigger
+request_trig_out: false,        // send trigger out request on local trigger
+}
+
+{
+name: "CH2",            // for channel 0
+index: "serial-19857",             // channel specific settings
+enabled: true,           // record events from this channel
+dc_offset: 32767,       // volts to shift the input by (-1V to 1V)
+trigger_threshold: 8000, // counts past baseline to trigger
+shaped_trigger_width: 6,       // analog sum pulse width is this number times 8 ns
+dynamic_range: 1, // Choose index [2Vpp,0.5Vpp]
+}
+{
+name: "CH3",            // for channel 0
+index: "serial-19857",             // channel specific settings
+enabled: true,           // record events from this channel
+dc_offset: 32767,       // volts to shift the input by (-1V to 1V)
+trigger_threshold: 1638, // counts past baseline to trigger
+shaped_trigger_width: 1,       // analog sum pulse width is this number times 8 ns
+dynamic_range: 1, // Choose index [2Vpp,0.5Vpp]
+}
+
+{
+name: "GR2",              // pairwise common settings
+index: "serial-19857",             // channel specific settings
+local_logic: 3,   // what to propagate as trigger requests [AND, EVEN, ODD, OR]
+request_duration: 0, // trigger request pulse duration [fixed width, over/under threshold]
+request_global_trigger: false, // send global trigger request on local trigger
+request_trig_out: false,        // send trigger out request on local trigger
+}
+
+{
+name: "CH4",            // for channel 0
+index: "serial-19857",             // channel specific settings
+enabled: true,           // record events from this channel
+dc_offset: 32767,       // volts to shift the input by (-1V to 1V)
+trigger_threshold: 1638, // counts past baseline to trigger
+shaped_trigger_width: 1,       // analog sum pulse width is this number times 8 ns
+dynamic_range: 1, // Choose index [2Vpp,0.5Vpp]
+}
+
+{
+name: "CH5",            // for channel 0
+index: "serial-19857",             // channel specific settings
+enabled: true,           // record events from this channel
+dc_offset: 32767,       // volts to shift the input by (-1V to 1V)
+trigger_threshold: 1638, // counts past baseline to trigger
+shaped_trigger_width: 1,       // analog sum pulse width is this number times 8 ns
+dynamic_range: 1, // Choose index [2Vpp,0.5Vpp]
+}
+
+{
+name: "GR3",              // pairwise common settings
+index: "serial-19857",             // channel specific settings
+local_logic: 3,   // what to propagate as trigger requests [AND, EVEN, ODD, OR]
+request_duration: 0, // trigger request pulse duration [fixed width, over/under threshold]
+request_global_trigger: false, // send global trigger request on local trigger
+request_trig_out: false,        // send trigger out request on local trigger
+}
+
+{
+name: "CH6",            // for channel 0
+index: "serial-19857",             // channel specific settings
+enabled: true,           // record events from this channel
+dc_offset: 32767,       // volts to shift the input by (-1V to 1V)
+trigger_threshold: 1638, // counts past baseline to trigger
+shaped_trigger_width: 1,       // analog sum pulse width is this number times 8 ns
+dynamic_range: 1, // Choose index [2Vpp,0.5Vpp]
+}
+
+{
+name: "CH7",            // for channel 0
+index: "serial-19857",             // channel specific settings
+enabled: true,           // record events from this channel
+dc_offset: 32767,       // volts to shift the input by (-1V to 1V)
+trigger_threshold: 1638, // counts past baseline to trigger
+shaped_trigger_width: 1,       // analog sum pulse width is this number times 8 ns
+dynamic_range: 1, // Choose index [2Vpp,0.5Vpp]
+}
+
+{
+name: "GR4",              // pairwise common settings
+index: "serial-19857",             // channel specific settings
+local_logic: 3,   // what to propagate as trigger requests [AND, EVEN, ODD, OR]
+request_duration: 0, // trigger request pulse duration [fixed width, over/under threshold]
+request_global_trigger: false, // send global trigger request on local trigger
+request_trig_out: false,        // send trigger out request on local trigger
+}
+
+{
+name: "CH8",            // for channel 0
+index: "serial-19857",             // channel specific settings
+enabled: true,           // record events from this channel
+dc_offset: 32767,       // volts to shift the input by (-1V to 1V)
+trigger_threshold: 1638, // counts past baseline to trigger
+shaped_trigger_width: 1,       // analog sum pulse width is this number times 8 ns
+dynamic_range: 1, // Choose index [2Vpp,0.5Vpp]
+}
+
+{
+name: "CH9",            // for channel 0
+index: "serial-19857",             // channel specific settings
+enabled: true,           // record events from this channel
+dc_offset: 32767,       // volts to shift the input by (-1V to 1V)
+trigger_threshold: 1638, // counts past baseline to trigger
+shaped_trigger_width: 1,       // analog sum pulse width is this number times 8 ns
+dynamic_range: 1, // Choose index [2Vpp,0.5Vpp]
+}
+
+{
+name: "GR5",              // pairwise common settings
+index: "serial-19857",             // channel specific settings
+local_logic: 3,   // what to propagate as trigger requests [AND, EVEN, ODD, OR]
+request_duration: 0, // trigger request pulse duration [fixed width, over/under threshold]
+request_global_trigger: false, // send global trigger request on local trigger
+request_trig_out: false,        // send trigger out request on local trigger
+}
+
+{
+name: "CH10",            // for channel 0
+index: "serial-19857",             // channel specific settings
+enabled: true,           // record events from this channel
+dc_offset: 32767,       // volts to shift the input by (-1V to 1V)
+trigger_threshold: 1638, // counts past baseline to trigger
+shaped_trigger_width: 1,       // analog sum pulse width is this number times 8 ns
+dynamic_range: 1, // Choose index [2Vpp,0.5Vpp]
+}
+
+{
+name: "CH11",            // for channel 0
+index: "serial-19857",             // channel specific settings
+enabled: true,           // record events from this channel
+dc_offset: 32767,       // volts to shift the input by (-1V to 1V)
+trigger_threshold: 1638, // counts past baseline to trigger
+shaped_trigger_width: 1,       // analog sum pulse width is this number times 8 ns
+dynamic_range: 1, // Choose index [2Vpp,0.5Vpp]
+}
+
+{
+name: "GR6",              // pairwise common settings
+index: "serial-19857",             // channel specific settings
+local_logic: 3,   // what to propagate as trigger requests [AND, EVEN, ODD, OR]
+request_duration: 0, // trigger request pulse duration [fixed width, over/under threshold]
+request_global_trigger: false, // send global trigger request on local trigger
+request_trig_out: false,        // send trigger out request on local trigger
+}
+
+{
+name: "CH12",            // for channel 0
+index: "serial-19857",             // channel specific settings
+enabled: true,           // record events from this channel
+dc_offset: 32767,       // volts to shift the input by (-1V to 1V)
+trigger_threshold: 1638, // counts past baseline to trigger
+shaped_trigger_width: 1,       // analog sum pulse width is this number times 8 ns
+dynamic_range: 1, // Choose index [2Vpp,0.5Vpp]
+}
+
+{
+name: "CH13",            // for channel 0
+index: "serial-19857",             // channel specific settings
+enabled: true,           // record events from this channel
+dc_offset: 32767,       // volts to shift the input by (-1V to 1V)
+trigger_threshold: 1638, // counts past baseline to trigger
+shaped_trigger_width: 1,       // analog sum pulse width is this number times 8 ns
+dynamic_range: 1, // Choose index [2Vpp,0.5Vpp]
+}
+
+{
+name: "GR7",              // pairwise common settings
+index: "serial-19857",             // channel specific settings
+local_logic: 3,   // what to propagate as trigger requests [AND, EVEN, ODD, OR]
+request_duration: 0, // trigger request pulse duration [fixed width, over/under threshold]
+request_global_trigger: false, // send global trigger request on local trigger
+request_trig_out: false,        // send trigger out request on local trigger
+}
+
+{
+name: "CH14",            // for channel 0
+index: "serial-19857",             // channel specific settings
+enabled: true,           // record events from this channel
+dc_offset: 32767,       // volts to shift the input by (-1V to 1V)
+trigger_threshold: 1638, // counts past baseline to trigger
+shaped_trigger_width: 1,       // analog sum pulse width is this number times 8 ns
+dynamic_range: 1, // Choose index [2Vpp,0.5Vpp]
+}
+
+{
+name: "CH15",            // for channel 0
+index: "serial-19857",             // channel specific settings
+enabled: true,           // record events from this channel
+dc_offset: 32767,       // volts to shift the input by (-1V to 1V)
+trigger_threshold: 1638, // counts past baseline to trigger
+shaped_trigger_width: 1,       // analog sum pulse width is this number times 8 ns
+dynamic_range: 1, // Choose index [2Vpp,0.5Vpp]
+}
+
+{
+name: "V1730",                  // V1730 global settings
+index: "serial-19858",          // To match card to subtables, data storage
+communication: "optical-link-0", // channel through which to access board
+base_address: 0,                // node # in CONET network
+record_length: 500,             // # of samples per waveform
+post_trigger: 25,                // wait this number * 4 samples before freezing current buffer
+buffer_size: 20,                // Readout circular buffer size in MiB
+coincidence_window: 0,          // time window for majority coincidence is this number * 8 ns
+global_majority_level: 0,       // this number + 1 requests required for global trigger
+external_trigger_enable: true, // trig in fires a global trigger
+external_trigger_out: true,    // route trig in to trig out
+software_trigger_enable: false,  // software trigger fires a global trigger
+software_trigger_out: false,    // route software trigger to trig out
+trig_out_logic: 0,              // Choose index [OR, AND, MAJORITY] how trigger requests fire trig out
+trig_out_majority_level: 0,     // trig_out_majority_level+1 requests required for trig out in MAJORITY mode
+trigger_overlap: 0,             // overlapping trigger windows [DISABLED, ENABLED]
+test_pattern: 0,                // triangular wave test pattern [DISABLED, ENABLED]
+trigger_polarity: 1,            // trigger on pulse going [OVER, UNDER] threshold
+events_per_transfer: 0x3FF,     // maximum board aggregates to read out during a single transfer
+}
+
+{
+name: "GR0",              // pairwise common settings
+index: "serial-19858",             // channel specific settings
+local_logic: 3,   // what to propagate as trigger requests [AND, EVEN, ODD, OR]
+request_duration: 0, // trigger request pulse duration [fixed width, over/under threshold]
+request_global_trigger: false, // send global trigger request on local trigger
+request_trig_out: false,        // send trigger out request on local trigger
+}
+
+{
+name: "CH0",            // for channel 0
+index: "serial-19858",             // channel specific settings
+enabled: true,           // record events from this channel
+dc_offset: 32767,       // volts to shift the input by (-1V to 1V)
+trigger_threshold: 8028, // counts past baseline to trigger
+shaped_trigger_width: 12,       // analog sum pulse width is this number times 8 ns
+dynamic_range: 1, // Choose index [2Vpp,0.5Vpp]
+}
+
+{
+name: "CH1",            // for channel 0
+index: "serial-19858",             // channel specific settings
+enabled: true,           // record events from this channel
+dc_offset: 32767,       // volts to shift the input by (-1V to 1V)
+trigger_threshold: 8150, // counts past baseline to trigger
+shaped_trigger_width: 12,       // analog sum pulse width is this number times 8 ns
+dynamic_range: 1, // Choose index [2Vpp,0.5Vpp]
+}
+
+{
+name: "GR1",              // pairwise common settings
+index: "serial-19858",             // channel specific settings
+local_logic: 3,   // what to propagate as trigger requests [AND, EVEN, ODD, OR]
+request_duration: 0, // trigger request pulse duration [fixed width, over/under threshold]
+request_global_trigger: false, // send global trigger request on local trigger
+request_trig_out: false,        // send trigger out request on local trigger
+}
+
+{
+name: "CH2",            // for channel 0
+index: "serial-19858",             // channel specific settings
+enabled: true,           // record events from this channel
+dc_offset: 32767,       // volts to shift the input by (-1V to 1V)
+trigger_threshold: 7000, // counts past baseline to trigger
+shaped_trigger_width: 6,       // analog sum pulse width is this number times 8 ns
+dynamic_range: 1, // Choose index [2Vpp,0.5Vpp]
+}
+{
+name: "CH3",            // for channel 0
+index: "serial-19858",             // channel specific settings
+enabled: true,           // record events from this channel
+dc_offset: 32767,       // volts to shift the input by (-1V to 1V)
+trigger_threshold: 1638, // counts past baseline to trigger
+shaped_trigger_width: 1,       // analog sum pulse width is this number times 8 ns
+dynamic_range: 1, // Choose index [2Vpp,0.5Vpp]
+}
+
+{
+name: "GR2",              // pairwise common settings
+index: "serial-19858",             // channel specific settings
+local_logic: 3,   // what to propagate as trigger requests [AND, EVEN, ODD, OR]
+request_duration: 0, // trigger request pulse duration [fixed width, over/under threshold]
+request_global_trigger: false, // send global trigger request on local trigger
+request_trig_out: false,        // send trigger out request on local trigger
+}
+
+{
+name: "CH4",            // for channel 0
+index: "serial-19858",             // channel specific settings
+enabled: true,           // record events from this channel
+dc_offset: 32767,       // volts to shift the input by (-1V to 1V)
+trigger_threshold: 1638, // counts past baseline to trigger
+shaped_trigger_width: 1,       // analog sum pulse width is this number times 8 ns
+dynamic_range: 1, // Choose index [2Vpp,0.5Vpp]
+}
+
+{
+name: "CH5",            // for channel 0
+index: "serial-19858",             // channel specific settings
+enabled: true,           // record events from this channel
+dc_offset: 32767,       // volts to shift the input by (-1V to 1V)
+trigger_threshold: 1638, // counts past baseline to trigger
+shaped_trigger_width: 1,       // analog sum pulse width is this number times 8 ns
+dynamic_range: 1, // Choose index [2Vpp,0.5Vpp]
+}
+
+{
+name: "GR3",              // pairwise common settings
+index: "serial-19858",             // channel specific settings
+local_logic: 3,   // what to propagate as trigger requests [AND, EVEN, ODD, OR]
+request_duration: 0, // trigger request pulse duration [fixed width, over/under threshold]
+request_global_trigger: false, // send global trigger request on local trigger
+request_trig_out: false,        // send trigger out request on local trigger
+}
+
+{
+name: "CH6",            // for channel 0
+index: "serial-19858",             // channel specific settings
+enabled: true,           // record events from this channel
+dc_offset: 32767,       // volts to shift the input by (-1V to 1V)
+trigger_threshold: 1638, // counts past baseline to trigger
+shaped_trigger_width: 1,       // analog sum pulse width is this number times 8 ns
+dynamic_range: 1, // Choose index [2Vpp,0.5Vpp]
+}
+
+{
+name: "CH7",            // for channel 0
+index: "serial-19858",             // channel specific settings
+enabled: true,           // record events from this channel
+dc_offset: 32767,       // volts to shift the input by (-1V to 1V)
+trigger_threshold: 1638, // counts past baseline to trigger
+shaped_trigger_width: 1,       // analog sum pulse width is this number times 8 ns
+dynamic_range: 1, // Choose index [2Vpp,0.5Vpp]
+}
+
+{
+name: "GR4",              // pairwise common settings
+index: "serial-19858",             // channel specific settings
+local_logic: 3,   // what to propagate as trigger requests [AND, EVEN, ODD, OR]
+request_duration: 0, // trigger request pulse duration [fixed width, over/under threshold]
+request_global_trigger: false, // send global trigger request on local trigger
+request_trig_out: false,        // send trigger out request on local trigger
+}
+
+{
+name: "CH8",            // for channel 0
+index: "serial-19858",             // channel specific settings
+enabled: true,           // record events from this channel
+dc_offset: 32767,       // volts to shift the input by (-1V to 1V)
+trigger_threshold: 1638, // counts past baseline to trigger
+shaped_trigger_width: 1,       // analog sum pulse width is this number times 8 ns
+dynamic_range: 1, // Choose index [2Vpp,0.5Vpp]
+}
+
+{
+name: "CH9",            // for channel 0
+index: "serial-19858",             // channel specific settings
+enabled: true,           // record events from this channel
+dc_offset: 32767,       // volts to shift the input by (-1V to 1V)
+trigger_threshold: 1638, // counts past baseline to trigger
+shaped_trigger_width: 1,       // analog sum pulse width is this number times 8 ns
+dynamic_range: 1, // Choose index [2Vpp,0.5Vpp]
+}
+
+{
+name: "GR5",              // pairwise common settings
+index: "serial-19858",             // channel specific settings
+local_logic: 3,   // what to propagate as trigger requests [AND, EVEN, ODD, OR]
+request_duration: 0, // trigger request pulse duration [fixed width, over/under threshold]
+request_global_trigger: false, // send global trigger request on local trigger
+request_trig_out: false,        // send trigger out request on local trigger
+}
+
+{
+name: "CH10",            // for channel 0
+index: "serial-19858",             // channel specific settings
+enabled: true,           // record events from this channel
+dc_offset: 32767,       // volts to shift the input by (-1V to 1V)
+trigger_threshold: 1638, // counts past baseline to trigger
+shaped_trigger_width: 1,       // analog sum pulse width is this number times 8 ns
+dynamic_range: 1, // Choose index [2Vpp,0.5Vpp]
+}
+
+{
+name: "CH11",            // for channel 0
+index: "serial-19858",             // channel specific settings
+enabled: true,           // record events from this channel
+dc_offset: 32767,       // volts to shift the input by (-1V to 1V)
+trigger_threshold: 1638, // counts past baseline to trigger
+shaped_trigger_width: 1,       // analog sum pulse width is this number times 8 ns
+dynamic_range: 1, // Choose index [2Vpp,0.5Vpp]
+}
+
+{
+name: "GR6",              // pairwise common settings
+index: "serial-19858",             // channel specific settings
+local_logic: 3,   // what to propagate as trigger requests [AND, EVEN, ODD, OR]
+request_duration: 0, // trigger request pulse duration [fixed width, over/under threshold]
+request_global_trigger: false, // send global trigger request on local trigger
+request_trig_out: false,        // send trigger out request on local trigger
+}
+
+{
+name: "CH12",            // for channel 0
+index: "serial-19858",             // channel specific settings
+enabled: true,           // record events from this channel
+dc_offset: 32767,       // volts to shift the input by (-1V to 1V)
+trigger_threshold: 1638, // counts past baseline to trigger
+shaped_trigger_width: 1,       // analog sum pulse width is this number times 8 ns
+dynamic_range: 1, // Choose index [2Vpp,0.5Vpp]
+}
+
+{
+name: "CH13",            // for channel 0
+index: "serial-19858",             // channel specific settings
+enabled: true,           // record events from this channel
+dc_offset: 32767,       // volts to shift the input by (-1V to 1V)
+trigger_threshold: 1638, // counts past baseline to trigger
+shaped_trigger_width: 1,       // analog sum pulse width is this number times 8 ns
+dynamic_range: 1, // Choose index [2Vpp,0.5Vpp]
+}
+
+{
+name: "GR7",              // pairwise common settings
+index: "serial-19858",             // channel specific settings
+local_logic: 3,   // what to propagate as trigger requests [AND, EVEN, ODD, OR]
+request_duration: 0, // trigger request pulse duration [fixed width, over/under threshold]
+request_global_trigger: false, // send global trigger request on local trigger
+request_trig_out: false,        // send trigger out request on local trigger
+}
+
+{
+name: "CH14",            // for channel 0
+index: "serial-19858",             // channel specific settings
+enabled: true,           // record events from this channel
+dc_offset: 32767,       // volts to shift the input by (-1V to 1V)
+trigger_threshold: 1638, // counts past baseline to trigger
+shaped_trigger_width: 1,       // analog sum pulse width is this number times 8 ns
+dynamic_range: 1, // Choose index [2Vpp,0.5Vpp]
+}
+
+{
+name: "CH15",            // for channel 0
+index: "serial-19858",             // channel specific settings
+enabled: true,           // record events from this channel
+dc_offset: 32767,       // volts to shift the input by (-1V to 1V)
+trigger_threshold: 1638, // counts past baseline to trigger
+shaped_trigger_width: 1,       // analog sum pulse width is this number times 8 ns
+dynamic_range: 1, // Choose index [2Vpp,0.5Vpp]
+}

@@ -20,13 +20,13 @@
 #include <string>
 #include <ctime>
 
-#include "BoardCommManager.hh"
+#include "VMEBridge.hh"
 #include "Digitizer.hh"
 #include "RunDB.hh"
 #include "json.hh"
 
-#ifndef V1730_DPP_dpppsd__hh
-#define V1730_DPP_dpppsd__hh
+#ifndef V1730_dpppsd__hh
+#define V1730_dpppsd__hh
 
 typedef struct {
 
@@ -70,7 +70,7 @@ typedef struct {
     //REG_DC_OFFSET
     uint32_t dc_offset; // 16 bit (-1V to 1V)
 
-} V1730_DPP_chan_config;
+} V1730_chan_config;
 
 typedef struct {
 
@@ -95,7 +95,7 @@ typedef struct {
     //REG_NEV_AGGREGATE
     uint32_t ev_per_buffer; // 10 bit
 
-} V1730_DPP_group_config;
+} V1730_group_config;
 
 typedef struct {
 
@@ -124,18 +124,18 @@ typedef struct {
     //REG_READOUT_BLT_AGGREGATE_NUMBER
     uint16_t max_board_agg_blt;
     
-} V1730_DPP_card_config;
+} V1730_card_config;
 
-class V1730_DPPSettings : public DigitizerSettings {
-    friend class V1730_DPP;
+class V1730Settings : public DigitizerSettings {
+    friend class V1730;
 
     public:
     
-        V1730_DPPSettings();
+        V1730Settings();
         
-        V1730_DPPSettings(RunTable &digitizer, RunDB &db);
+        V1730Settings(RunTable &digitizer, RunDB &db);
         
-        virtual ~V1730_DPPSettings();
+        virtual ~V1730Settings();
         
         void validate();
         
@@ -158,16 +158,16 @@ class V1730_DPPSettings : public DigitizerSettings {
         inline uint32_t getThreshold(uint32_t ch) {
             return chans[ch].trg_threshold;
         }
-        
+
         inline std::string getIndex() {
             return index;
         }
     
     protected:
     
-        V1730_DPP_card_config card;
-        V1730_DPP_group_config groups[8];
-        V1730_DPP_chan_config chans[16];
+        V1730_card_config card;
+        V1730_group_config groups[8];
+        V1730_chan_config chans[16];
         
         void chanDefaults(uint32_t ch);
         
@@ -175,7 +175,7 @@ class V1730_DPPSettings : public DigitizerSettings {
         
 };
 
-class V1730_DPP : public Digitizer {
+class V1730 : public Digitizer {
     
     public:
     
@@ -227,9 +227,9 @@ class V1730_DPP : public Digitizer {
         static constexpr uint32_t REG_VME_ADDRESS_RELOCATION = 0xEF10;
         static constexpr uint32_t REG_READOUT_BLT_AGGREGATE_NUMBER = 0xEF1C;
         
-        V1730_DPP(BoardCommManager &bridge, uint32_t baseaddr);
+        V1730(VMEBridge &bridge, uint32_t baseaddr);
         
-        virtual ~V1730_DPP();
+        virtual ~V1730();
         
         virtual void calib();
 
@@ -253,13 +253,13 @@ class V1730_DPP : public Digitizer {
 
 };
 
-class V1730_DPPDecoder : public Decoder {
+class V1730Decoder : public Decoder {
 
     public: 
     
-        V1730_DPPDecoder(size_t eventBuffer, V1730_DPPSettings &settings);
+        V1730Decoder(size_t eventBuffer, V1730Settings &settings);
         
-        virtual ~V1730_DPPDecoder();
+        virtual ~V1730Decoder();
         
         virtual void decode(Buffer &buffer);
         
@@ -272,7 +272,7 @@ class V1730_DPPDecoder : public Decoder {
     protected:
         
         size_t eventBuffer;
-        V1730_DPPSettings &settings;
+        V1730Settings &settings;
         
         size_t dispatch_index;
         

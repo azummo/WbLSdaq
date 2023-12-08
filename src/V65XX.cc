@@ -25,7 +25,7 @@
 
 using namespace std;
 
-V65XX::V65XX(VMEBridge &bridge, uint32_t baseaddr) : VMECard(bridge,baseaddr) {
+V65XX::V65XX(BoardCommManager &bridge, uint32_t baseaddr) : VMECard(bridge,baseaddr) {
     nChans = read16(REG_NUM_CHANS);
     vmax = read16(REG_BOARD_VMAX);
     imax = read16(REG_BOARD_IMAX);

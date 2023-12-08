@@ -174,13 +174,14 @@ void V1742calib::calibrate(uint16_t *samples[4][8], uint16_t *trn_samples[4], si
 
 }
 
-V1742::V1742(VMEBridge &_bridge, uint32_t _baseaddr) : Digitizer(_bridge,_baseaddr) {
+V1742::V1742(BoardCommManager &_bridge, uint32_t _baseaddr) : Digitizer(_bridge,_baseaddr) {
 
 }
 
 V1742::~V1742() {
     //Fully reset the board just in case
-    write32(REG_BOARD_CONFIGURATION_RELOAD,0);
+//  write32(REG_BOARD_CONFIGURATION_RELOAD,0);
+    write32(REG_SOFTWARE_RESET,0);
 }
 
 bool V1742::program(DigitizerSettings &_settings) {
@@ -195,7 +196,8 @@ bool V1742::program(DigitizerSettings &_settings) {
     uint32_t data;
     
     //Fully reset the board just in case
-    write32(REG_BOARD_CONFIGURATION_RELOAD,0);
+//  write32(REG_BOARD_CONFIGURATION_RELOAD,0);
+    write32(REG_SOFTWARE_RESET,0);
     
     usleep(10000);
 
@@ -284,6 +286,34 @@ bool V1742::checkTemps(vector<uint32_t> &temps, uint32_t danger) {
     return over;
 }
 
+// hacked for using optical link
+V1742calib* V1742::staticGetCalib(V1742SampleFreq freq, int link, uint32_t baseaddr) {
+    int handle = 0;
+    int res = CAEN_DGTZ_OpenDigitizer(CAEN_DGTZ_OpticalLink, link, baseaddr, 0, &handle);
+    if (res != 0) throw runtime_error("getCalib: Could not open digitizer "+to_string(res));
+    
+    CAEN_DGTZ_DRS4Correction_t corr[4];
+    switch (freq) {
+        case GHz_5:
+            res = CAEN_DGTZ_GetCorrectionTables(handle,CAEN_DGTZ_DRS4_5GHz,&corr);
+            break;
+        case GHz_2_5:
+            res = CAEN_DGTZ_GetCorrectionTables(handle,CAEN_DGTZ_DRS4_2_5GHz,&corr);
+            break;
+        case GHz_1:
+            res = CAEN_DGTZ_GetCorrectionTables(handle,CAEN_DGTZ_DRS4_1GHz,&corr);
+            break;
+        default: throw runtime_error("getCalib: Invalid sample rate");
+    }
+    if (res != 0) throw runtime_error("getCalib: Could not get calibration data "+to_string(res));
+    
+    res = CAEN_DGTZ_CloseDigitizer(handle);
+    if (res != 0) throw runtime_error("getCalib: Could not close digitizer "+to_string(res));
+    
+    return new V1742calib(corr);
+}
+
+/*
 V1742calib* V1742::staticGetCalib(V1742SampleFreq freq, int link, uint32_t baseaddr) {
     int handle = 0;
     int res = CAEN_DGTZ_OpenDigitizer(CAEN_DGTZ_USB, link, 0, baseaddr, &handle);
@@ -309,13 +339,16 @@ V1742calib* V1742::staticGetCalib(V1742SampleFreq freq, int link, uint32_t basea
     
     return new V1742calib(corr);
 }
+*/
 
 
+/*
 V1742calib* V1742::getCalib(V1742SampleFreq freq) {
     //This ***will not work*** here due to a bug in CAENDigitizer
     //call the static version BEFORE invoking any CAENVME methods
     return staticGetCalib(freq,bridge.getLinkNum(),baseaddr);
 }
+*/
 
 V1742Decoder::V1742Decoder(size_t _eventBuffer, V1742calib *_calib, V1742Settings &_settings) : eventBuffer(_eventBuffer), calib(_calib), settings(_settings) {
 

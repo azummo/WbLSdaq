@@ -20,13 +20,13 @@
 #include <string>
 #include <ctime>
 
-#include "BoardCommManager.hh"
+#include "VMEBridge.hh"
 #include "Digitizer.hh"
 #include "RunDB.hh"
 #include "json.hh"
 
-#ifndef V1730_DPP_dpppsd__hh
-#define V1730_DPP_dpppsd__hh
+#ifndef V1730_dummy__hh
+#define V1730_dummy__hh
 
 typedef struct {
 
@@ -48,7 +48,7 @@ typedef struct {
     //REG_PRE_GATE
     uint32_t gate_offset; // 8 bit
     
-    //REG_DPP_TRG_THRESHOLD
+    //REG_TRIGGER_THRESHOLD
     uint32_t trg_threshold; // 12 bit
     
     //REG_BASELINE_THRESHOLD
@@ -70,7 +70,7 @@ typedef struct {
     //REG_DC_OFFSET
     uint32_t dc_offset; // 16 bit (-1V to 1V)
 
-} V1730_DPP_chan_config;
+} V1730_dummy_chan_config;
 
 typedef struct {
 
@@ -95,7 +95,7 @@ typedef struct {
     //REG_NEV_AGGREGATE
     uint32_t ev_per_buffer; // 10 bit
 
-} V1730_DPP_group_config;
+} V1730_dummy_group_config;
 
 typedef struct {
 
@@ -124,18 +124,18 @@ typedef struct {
     //REG_READOUT_BLT_AGGREGATE_NUMBER
     uint16_t max_board_agg_blt;
     
-} V1730_DPP_card_config;
+} V1730_dummy_card_config;
 
-class V1730_DPPSettings : public DigitizerSettings {
-    friend class V1730_DPP;
+class V1730_dummySettings : public DigitizerSettings {
+    friend class V1730_dummy;
 
     public:
     
-        V1730_DPPSettings();
+        V1730_dummySettings();
         
-        V1730_DPPSettings(RunTable &digitizer, RunDB &db);
+        V1730_dummySettings(RunTable &digitizer, RunDB &db);
         
-        virtual ~V1730_DPPSettings();
+        virtual ~V1730_dummySettings();
         
         void validate();
         
@@ -165,71 +165,70 @@ class V1730_DPPSettings : public DigitizerSettings {
     
     protected:
     
-        V1730_DPP_card_config card;
-        V1730_DPP_group_config groups[8];
-        V1730_DPP_chan_config chans[16];
+        V1730_dummy_card_config card;
+        V1730_dummy_group_config groups[8];
+        V1730_dummy_chan_config chans[16];
         
         void chanDefaults(uint32_t ch);
         
         void groupDefaults(uint32_t gr);
         
+	// ejc
+	uint32_t address;
+	uint32_t word;
 };
 
-class V1730_DPP : public Digitizer {
+class V1730_dummy : public Digitizer {
     
     public:
     
         //system wide
-        static constexpr uint32_t REG_CONFIG = 0x8000;
-        static constexpr uint32_t REG_CONFIG_SET = 0x8004;
-        static constexpr uint32_t REG_CONFIG_CLEAR = 0x8008;
-        static constexpr uint32_t REG_BUFF_ORG = 0x800C;
-        static constexpr uint32_t REG_CHANNEL_CALIB = 0x809C;
-        static constexpr uint32_t REG_FRONT_PANEL_CONTROL = 0x811C;
-        static constexpr uint32_t REG_LVDS_NEW_FEATURES = 0x81A0;
-        static constexpr uint32_t REG_DUMMY = 0xEF20;
-        static constexpr uint32_t REG_SOFTWARE_RESET = 0xEF24;
-        static constexpr uint32_t REG_SOFTWARE_CLEAR = 0xEF28;
-        static constexpr uint32_t REG_BOARD_CONFIGURATION_RELOAD = 0xEF34;
+        static constexpr uint32_t REG_CONFIG = 0x8000; // good
+        static constexpr uint32_t REG_CONFIG_SET = 0x8004; // good
+        static constexpr uint32_t REG_CONFIG_CLEAR = 0x8008; // good
+        static constexpr uint32_t REG_BUFF_ORG = 0x800C; // good
+        static constexpr uint32_t REG_CHANNEL_CALIB = 0x809C; // good
+        static constexpr uint32_t REG_FRONT_PANEL_CONTROL = 0x811C; // good
+        static constexpr uint32_t REG_LVDS_NEW_FEATURES = 0x81A0; // good
+        static constexpr uint32_t REG_DUMMY = 0xEF20; // good
+        static constexpr uint32_t REG_SOFTWARE_RESET = 0xEF24; // good
+        static constexpr uint32_t REG_SOFTWARE_CLEAR = 0xEF28; // good
+        static constexpr uint32_t REG_BOARD_CONFIGURATION_RELOAD = 0xEF34; // good
 
         //per channel, or with = 0x0n00
-        static constexpr uint32_t REG_RECORD_LENGTH = 0x1020;
-        static constexpr uint32_t REG_DYNAMIC_RANGE = 0x1024;
-        static constexpr uint32_t REG_NEV_AGGREGATE = 0x1034;
-        static constexpr uint32_t REG_PRE_TRG = 0x1038;
-        static constexpr uint32_t REG_SHORT_GATE = 0x1054;
-        static constexpr uint32_t REG_LONG_GATE = 0x1058;
-        static constexpr uint32_t REG_PRE_GATE = 0x105C;
-        static constexpr uint32_t REG_DPP_TRG_THRESHOLD = 0x1060;
-        static constexpr uint32_t REG_BASELINE_THRESHOLD = 0x1064;
-        static constexpr uint32_t REG_SHAPED_TRIGGER_WIDTH = 0x1070;
-        static constexpr uint32_t REG_TRIGGER_HOLDOFF = 0x1074;
-        static constexpr uint32_t REG_DPP_CTRL = 0x1080;
-        static constexpr uint32_t REG_TRIGGER_CTRL = 0x1084;
-        static constexpr uint32_t REG_DC_OFFSET = 0x1098;
-        static constexpr uint32_t REG_CHANNEL_TEMP = 0x10A8;
+        static constexpr uint32_t REG_RECORD_LENGTH = 0x1020; // can't find it, keep it
+        static constexpr uint32_t REG_DYNAMIC_RANGE = 0x1028; // was 0x1024
+        static constexpr uint32_t REG_NEV_AGGREGATE = 0x1034;  // can't find it, keep it
+        static constexpr uint32_t REG_PRE_TRG = 0x1038; // can't find it, keep it
+        static constexpr uint32_t REG_BASELINE_THRESHOLD = 0x1064; // can't find it, keep it
+        static constexpr uint32_t REG_SHAPED_TRIGGER_WIDTH = 0x1070; // good
+        static constexpr uint32_t REG_TRIGGER_HOLDOFF = 0x1074; // can't find it, keep it    
+        static constexpr uint32_t REG_TRIGGER_THRESHOLD = 0x1080; // good
+        static constexpr uint32_t REG_TRIGGER_CTRL = 0x1084; // good
+        static constexpr uint32_t REG_DC_OFFSET = 0x1098; // good
+        static constexpr uint32_t REG_CHANNEL_TEMP = 0x10A8; // good
         
         //per couple, add 4*couple 
-        static constexpr uint32_t REG_LOCAL_VALIDATION = 0x8180; 
+        static constexpr uint32_t REG_LOCAL_VALIDATION = 0x8180; // can't find it, keep it 
 
         //acquisition 
-        static constexpr uint32_t REG_ACQUISITION_CONTROL = 0x8100;
-        static constexpr uint32_t REG_ACQUISITION_STATUS = 0x8104;
-        static constexpr uint32_t REG_SOFTWARE_TRIGGER = 0x8108;
-        static constexpr uint32_t REG_GLOBAL_TRIGGER_MASK = 0x810C;
-        static constexpr uint32_t REG_TRIGGER_OUT_MASK = 0x8110;
-        static constexpr uint32_t REG_CHANNEL_ENABLE_MASK = 0x8120;
+        static constexpr uint32_t REG_ACQUISITION_CONTROL = 0x8100; // good
+        static constexpr uint32_t REG_ACQUISITION_STATUS = 0x8104; // good
+        static constexpr uint32_t REG_SOFTWARE_TRIGGER = 0x8108; // good
+        static constexpr uint32_t REG_GLOBAL_TRIGGER_MASK = 0x810C; // good
+        static constexpr uint32_t REG_TRIGGER_OUT_MASK = 0x8110; // good
+        static constexpr uint32_t REG_CHANNEL_ENABLE_MASK = 0x8120; // good
 
         //readout
-        static constexpr uint32_t REG_EVENT_SIZE = 0x814C;
-        static constexpr uint32_t REG_READOUT_CONTROL = 0xEF00;
-        static constexpr uint32_t REG_READOUT_STATUS = 0xEF04;
-        static constexpr uint32_t REG_VME_ADDRESS_RELOCATION = 0xEF10;
-        static constexpr uint32_t REG_READOUT_BLT_AGGREGATE_NUMBER = 0xEF1C;
+        static constexpr uint32_t REG_EVENT_SIZE = 0x814C; // good
+        static constexpr uint32_t REG_READOUT_CONTROL = 0xEF00; // good
+        static constexpr uint32_t REG_READOUT_STATUS = 0xEF04; // good
+        static constexpr uint32_t REG_VME_ADDRESS_RELOCATION = 0xEF10; // good
+        static constexpr uint32_t REG_READOUT_BLT_AGGREGATE_NUMBER = 0xEF1C; // good
         
-        V1730_DPP(BoardCommManager &bridge, uint32_t baseaddr);
+        V1730_dummy(VMEBridge &bridge, uint32_t baseaddr);
         
-        virtual ~V1730_DPP();
+        virtual ~V1730_dummy();
         
         virtual void calib();
 
@@ -253,13 +252,13 @@ class V1730_DPP : public Digitizer {
 
 };
 
-class V1730_DPPDecoder : public Decoder {
+class V1730_dummyDecoder : public Decoder {
 
     public: 
     
-        V1730_DPPDecoder(size_t eventBuffer, V1730_DPPSettings &settings);
+        V1730_dummyDecoder(size_t eventBuffer, V1730_dummySettings &settings);
         
-        virtual ~V1730_DPPDecoder();
+        virtual ~V1730_dummyDecoder();
         
         virtual void decode(Buffer &buffer);
         
@@ -272,7 +271,7 @@ class V1730_DPPDecoder : public Decoder {
     protected:
         
         size_t eventBuffer;
-        V1730_DPPSettings &settings;
+        V1730_dummySettings &settings;
         
         size_t dispatch_index;
         

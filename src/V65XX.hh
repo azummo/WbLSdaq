@@ -79,7 +79,7 @@ class V65XX : public VMECard, virtual public HVInterface {
         static constexpr double IRESL = 0.005; // for low range registers uA
         static constexpr double TRES = 0.1; // s
         
-        V65XX(VMEBridge &bridge, uint32_t baseaddr);
+        V65XX(BoardCommManager &bridge, uint32_t baseaddr);
         
         virtual ~V65XX();
         

@@ -23,7 +23,7 @@
 
 using namespace std;
 
-V1730_DPPSettings::V1730_DPPSettings() : DigitizerSettings("") {
+V1730Settings::V1730Settings() : DigitizerSettings("") {
     //These are "do nothing" defaults
     card.dual_trace = 0; // 1 bit
     card.analog_probe = 0; // 2 bit (see docs)
@@ -46,7 +46,7 @@ V1730_DPPSettings::V1730_DPPSettings() : DigitizerSettings("") {
     
 }
 
-V1730_DPPSettings::V1730_DPPSettings(RunTable &digitizer, RunDB &db) : DigitizerSettings(digitizer.getIndex()){
+V1730Settings::V1730Settings(RunTable &digitizer, RunDB &db) : DigitizerSettings(digitizer.getIndex()){
     
     card.dual_trace = 0; // 1 bit
     card.analog_probe = 0; // 2 bit (see docs)
@@ -117,11 +117,11 @@ V1730_DPPSettings::V1730_DPPSettings(RunTable &digitizer, RunDB &db) : Digitizer
     }
 }
 
-V1730_DPPSettings::~V1730_DPPSettings() {
+V1730Settings::~V1730Settings() {
 
 }
         
-void V1730_DPPSettings::validate() { //FIXME validate bit fields too
+void V1730Settings::validate() { //FIXME validate bit fields too
     for (int ch = 0; ch < 16; ch++) {
         if (ch % 2 == 0) {
             if (groups[ch/2].record_length > 65535) throw runtime_error("Number of samples exceeds 65535 (gr " + to_string(ch/2) + ")");
@@ -141,7 +141,7 @@ void V1730_DPPSettings::validate() { //FIXME validate bit fields too
     }
 }
 
-void V1730_DPPSettings::chanDefaults(uint32_t ch) {
+void V1730Settings::chanDefaults(uint32_t ch) {
     chans[ch].enabled = 0; //1 bit
     chans[ch].dynamic_range = 0; // 1 bit
     chans[ch].pre_trigger = 30; // 9* bit
@@ -160,7 +160,7 @@ void V1730_DPPSettings::chanDefaults(uint32_t ch) {
     chans[ch].dc_offset = 0x8000; // 16 bit (-1V to 1V)
 }
 
-void V1730_DPPSettings::groupDefaults(uint32_t gr) {
+void V1730Settings::groupDefaults(uint32_t gr) {
     groups[gr].local_logic = 3; // 2 bit
     groups[gr].valid_logic = 3; // 2 bit
     groups[gr].global_trigger = 0; // 1 bit
@@ -169,25 +169,25 @@ void V1730_DPPSettings::groupDefaults(uint32_t gr) {
     groups[gr].ev_per_buffer = 50; // 10 bit
 }
 
-V1730_DPP::V1730_DPP(BoardCommManager &_bridge, uint32_t _baseaddr) : Digitizer(_bridge,_baseaddr) {
+V1730::V1730(VMEBridge &_bridge, uint32_t _baseaddr) : Digitizer(_bridge,_baseaddr) {
 
 }
 
-V1730_DPP::~V1730_DPP() {
+V1730::~V1730() {
     //Fully reset the board just in case
     write32(REG_BOARD_CONFIGURATION_RELOAD,0);
 }
 
-void V1730_DPP::calib() {
+void V1730::calib() {
     write32(REG_CHANNEL_CALIB,0xAAAAAAAA);
 }
 
-bool V1730_DPP::program(DigitizerSettings &_settings) {
-    V1730_DPPSettings &settings = dynamic_cast<V1730_DPPSettings&>(_settings);
+bool V1730::program(DigitizerSettings &_settings) {
+    V1730Settings &settings = dynamic_cast<V1730Settings&>(_settings);
     try {
         settings.validate();
     } catch (runtime_error &e) {
-        cout << "Could not program V1730_DPP: " << e.what() << endl;
+        cout << "Could not program V1730: " << e.what() << endl;
         return false;
     }
 
@@ -308,28 +308,28 @@ bool V1730_DPP::program(DigitizerSettings &_settings) {
     return true;
 }
 
-void V1730_DPP::softTrig() {
+void V1730::softTrig() {
     write32(REG_SOFTWARE_TRIGGER,0xDEADBEEF);
 }
 
-void V1730_DPP::startAcquisition() {
+void V1730::startAcquisition() {
     write32(REG_ACQUISITION_CONTROL,1<<2);
 }
 
-void V1730_DPP::stopAcquisition() {
+void V1730::stopAcquisition() {
     write32(REG_ACQUISITION_CONTROL,0);
 }
 
-bool V1730_DPP::acquisitionRunning() {
+bool V1730::acquisitionRunning() {
     return read32(REG_ACQUISITION_STATUS) & (1 << 2);
 }
 
-bool V1730_DPP::readoutReady() {
+bool V1730::readoutReady() {
     return read32(REG_ACQUISITION_STATUS) & (1 << 3);
 }
 
 
-bool V1730_DPP::checkTemps(vector<uint32_t> &temps, uint32_t danger) {
+bool V1730::checkTemps(vector<uint32_t> &temps, uint32_t danger) {
     temps.resize(16);
     bool over = false;
     for (int ch = 0; ch < 16; ch++) {
@@ -339,7 +339,7 @@ bool V1730_DPP::checkTemps(vector<uint32_t> &temps, uint32_t danger) {
     return over;
 }
 
-size_t V1730_DPP::readoutBLT_evtsz(char *buffer, size_t buffer_size) {
+size_t V1730::readoutBLT_evtsz(char *buffer, size_t buffer_size) {
     size_t offset = 0, total = 0;
     while (readoutReady()) {
         uint32_t next = read32(REG_EVENT_SIZE);
@@ -366,7 +366,7 @@ size_t V1730_DPP::readoutBLT_evtsz(char *buffer, size_t buffer_size) {
 
 
 
-V1730_DPPDecoder::V1730_DPPDecoder(size_t _eventBuffer, V1730_DPPSettings &_settings) : eventBuffer(_eventBuffer), settings(_settings) {
+V1730Decoder::V1730Decoder(size_t _eventBuffer, V1730Settings &_settings) : eventBuffer(_eventBuffer), settings(_settings) {
 
     dispatch_index = decode_counter = chanagg_counter = boardagg_counter = 0;
     
@@ -391,7 +391,7 @@ V1730_DPPDecoder::V1730_DPPDecoder(size_t _eventBuffer, V1730_DPPSettings &_sett
 
 }
 
-V1730_DPPDecoder::~V1730_DPPDecoder() {
+V1730Decoder::~V1730Decoder() {
     for (size_t i = 0; i < grabs.size(); i++) {
         delete [] grabs[i];
         delete [] patterns[i];
@@ -402,7 +402,7 @@ V1730_DPPDecoder::~V1730_DPPDecoder() {
     }
 }
 
-void V1730_DPPDecoder::decode(Buffer &buf) {
+void V1730Decoder::decode(Buffer &buf) {
     vector<size_t> lastgrabbed(grabbed);
     
     decode_size = buf.fill();
@@ -422,7 +422,7 @@ void V1730_DPPDecoder::decode(Buffer &buf) {
     }
 }
 
-size_t V1730_DPPDecoder::eventsReady() {
+size_t V1730Decoder::eventsReady() {
     size_t grabs = grabbed[0];
     for (size_t idx = 1; idx < grabbed.size(); idx++) {
         if (grabbed[idx] < grabs) grabs = grabbed[idx];
@@ -432,7 +432,7 @@ size_t V1730_DPPDecoder::eventsReady() {
 
 // length, lvdsidx, dsize, nsamples, samples[], strlen, strname[]
 
-void V1730_DPPDecoder::dispatch(int nfd, int *fds) {
+void V1730Decoder::dispatch(int nfd, int *fds) {
     
     size_t ready = eventsReady();
     
@@ -460,7 +460,7 @@ void V1730_DPPDecoder::dispatch(int nfd, int *fds) {
 
 using namespace H5;
 
-void V1730_DPPDecoder::writeOut(H5File &file, size_t nEvents) {
+void V1730Decoder::writeOut(H5File &file, size_t nEvents) {
 
     cout << "\t/" << settings.getIndex() << endl;
 
@@ -547,7 +547,7 @@ void V1730_DPPDecoder::writeOut(H5File &file, size_t nEvents) {
     if (dispatch_index < 0) dispatch_index = 0;
 }
 
-uint32_t* V1730_DPPDecoder::decode_chan_agg(uint32_t *chanagg, uint32_t group, uint16_t pattern) {
+uint32_t* V1730Decoder::decode_chan_agg(uint32_t *chanagg, uint32_t group, uint16_t pattern) {
     const bool format_flag = chanagg[0] & 0x80000000;
     if (!format_flag) throw runtime_error("Channel format not found");
     
@@ -611,7 +611,7 @@ uint32_t* V1730_DPPDecoder::decode_chan_agg(uint32_t *chanagg, uint32_t group, u
     return chanagg + size;
 }
 
-uint32_t* V1730_DPPDecoder::decode_board_agg(uint32_t *boardagg) {
+uint32_t* V1730Decoder::decode_board_agg(uint32_t *boardagg) {
     if (boardagg[0] == 0xFFFFFFFF) {
         boardagg++; //sometimes padded
     }
