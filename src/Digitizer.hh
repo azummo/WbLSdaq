@@ -93,6 +93,7 @@ typedef struct DigitizerData {
   float ns_sample;
   uint32_t counters[20];
   uint32_t timetags[20];
+  uint16_t exttimetags[20];
 
   ChannelData channels[16];
 } DigitizerData;

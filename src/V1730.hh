@@ -94,6 +94,9 @@ typedef struct {
 
     //REG_READOUT_BLT_AGGREGATE_NUMBER
     uint16_t max_board_evt_blt;
+
+    //ETTT_flag
+    uint32_t use_ettt; // 1 bit
     
 } V1730_card_config;
 
@@ -143,6 +146,10 @@ class V1730Settings : public DigitizerSettings {
 
         inline std::string getIndex() {
             return index;
+        }
+
+	inline bool getETTTEnabled() {
+            return card.use_ettt;
         }
     
     protected:
@@ -267,6 +274,7 @@ class V1730Decoder : public Decoder {
         std::vector<size_t> grabbed;
         std::vector<uint16_t*> grabs, patterns;
         std::vector<uint32_t> timetags;
+        std::vector<uint16_t> exttimetags;
         std::vector<uint32_t> counters;
 
         uint32_t* decode_chan_agg(uint32_t *chanagg, uint32_t group, uint16_t pattern);
