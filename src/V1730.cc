@@ -14,12 +14,12 @@
  *  You should have received a copy of the GNU General Public License
  *  along with WbLSdaq. If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <cassert>
 #include <cmath>
 #include <iostream>
 #include <stdexcept>
- 
+
 #include "V1730.hh"
 
 #include <CAENDigitizer.h>
@@ -46,7 +46,7 @@ V1730Settings::V1730Settings() : DigitizerSettings("") {
     for (uint32_t ch = 0; ch < 16; ch++) {
         chanDefaults(ch);
     }
-    
+
 }
 
 // FIXME this needs to be checked for consistency with std firmware
@@ -71,7 +71,7 @@ V1730Settings::V1730Settings(RunTable &digitizer, RunDB &db) : DigitizerSettings
     if (card.buff_org > 0xA) card.buff_org = 0xA;
     if (card.buff_org < 0x2) card.buff_org = 0x2;
 //  cout << "Largest buffer: " << largest_buffer << " loc\nDesired buffers: " << num_buffers << "\nProgrammed buffers: " << (1<<settings.card.buff_org) << endl;
-    
+
     card.coincidence_window = digitizer["coincidence_window"].cast<int>(); // 3 bit
     card.global_majority_level = digitizer["global_majority_level"].cast<int>(); // 3 bit
     card.external_global_trigger = digitizer["external_trigger_enable"].cast<bool>() ? 1 : 0; // 1 bit
@@ -93,12 +93,12 @@ V1730Settings::V1730Settings(RunTable &digitizer, RunDB &db) : DigitizerSettings
             } else {
                 cout << "\t" << grname << endl;
                 RunTable group = db.getTable(grname,index);
-                
+
                 groups[ch/2].local_logic = group["local_logic"].cast<int>(); // 2 bit (see docs)
 		groups[ch/2].request_duration = group["request_duration"].cast<int>(); // 1 bit
                 groups[ch/2].global_trigger = group["request_global_trigger"].cast<bool>() ? 1 : 0; // 1 bit
                 groups[ch/2].trg_out = group["request_trig_out"].cast<bool>() ? 1 : 0; // 1 bit
-            
+
             }
         }
         string chname = "CH"+to_string(ch);
@@ -107,7 +107,7 @@ V1730Settings::V1730Settings(RunTable &digitizer, RunDB &db) : DigitizerSettings
         } else {
             cout << "\t" << chname << endl;
             RunTable channel = db.getTable(chname,index);
-    
+
             chans[ch].enabled = channel["enabled"].cast<bool>() ? 1 : 0; //1 bit
             // FIXME this needs to be tested
 //          chans[ch].dc_offset = round((-channel["dc_offset"].cast<double>()+1.0)/2.0*pow(2.0,16.0)); // 16 bit (-1V to 1V)
@@ -123,7 +123,7 @@ V1730Settings::V1730Settings(RunTable &digitizer, RunDB &db) : DigitizerSettings
 V1730Settings::~V1730Settings() {
 
 }
-        
+
 // FIXME need complete validation for implemented configuration
 void V1730Settings::validate() { //FIXME validate bit fields too
     if ((card.record_length < 1) || (640000 < card.record_length)){
@@ -178,24 +178,24 @@ bool V1730::program(DigitizerSettings &_settings) {
 
     //used to build bit fields
     uint32_t data;
-    
+
     //Fully reset the board just in case
 //  write32(REG_BOARD_CONFIGURATION_RELOAD,0);
     write32(REG_SOFTWARE_RESET,0);
-    
+
     //Front panel config
     data = (1<<0) //ttl
          | (0<<2) | (0<<3) | (0<<4) | (0<<5) //LVDS all input
          | (2<<6) // pattern mode
          | (0<<8) // old lvds features
-         | (0<<9);// latch on internal trigger 
+         | (0<<9);// latch on internal trigger
     data |= 0x00040000; // FIXME hack to propagate CLKOUT to TRGOUT
                         // 0x00040000 == TRGOUT
                         // 0x00050000 == CLKOUT    fires at 125  MHz
                         // 0x00090000 == CLK phase fires at 62.5 MHz
     data |= (settings.card.use_ettt << 22); // ETTT or LVDS pattern
     write32(REG_FRONT_PANEL_CONTROL,data);
-    
+
     //LVDS new features config
     data = (0<<0) | (0<<4) | (0<<8) | (0<<12); // ignored for now
     write32(REG_LVDS_NEW_FEATURES,data);
@@ -213,24 +213,24 @@ bool V1730::program(DigitizerSettings &_settings) {
     //build masks while configuring channels
     uint32_t channel_enable_mask = 0;
     uint32_t global_trigger_mask = (settings.card.coincidence_window << 20)
-                                 | (settings.card.global_majority_level << 24) 
-                                 | (settings.card.external_global_trigger << 30) 
+                                 | (settings.card.global_majority_level << 24)
+                                 | (settings.card.external_global_trigger << 30)
                                  | (settings.card.software_global_trigger << 31);
-    uint32_t trigger_out_mask = (settings.card.out_logic << 8) 
+    uint32_t trigger_out_mask = (settings.card.out_logic << 8)
                               | (settings.card.out_majority_level << 10)
-                              | (settings.card.external_trg_out << 30) 
+                              | (settings.card.external_trg_out << 30)
                               | (settings.card.software_trg_out << 31);
-    
+
     for (int ch = 0; ch < 16; ch++) {
         channel_enable_mask |= (settings.chans[ch].enabled << ch);
-        
+
         if (ch % 2 == 0) {
             global_trigger_mask |= (settings.groups[ch/2].global_trigger << (ch/2));
             trigger_out_mask |= (settings.groups[ch/2].trg_out << (ch/2));
         } else {
             /* */
         }
-        
+
         // FIXME check word structure
         write32(REG_TRIGGER_THRESHOLD|(ch<<8),settings.chans[ch].trg_threshold);
         // FIXME check word structure
@@ -245,7 +245,7 @@ bool V1730::program(DigitizerSettings &_settings) {
         write32(REG_DYNAMIC_RANGE|(ch<<8), settings.chans[ch].dynamic_range);
         write32(REG_DC_OFFSET|(ch<<8),settings.chans[ch].dc_offset);
     }
-    
+
     // FIXME check word structure
     write32(REG_CHANNEL_ENABLE_MASK,channel_enable_mask);
     // FIXME check word structure
@@ -269,7 +269,7 @@ bool V1730::program(DigitizerSettings &_settings) {
     // FIXME this is a temporary hack and should be removed
     // once the semantics of the DC offset are settled
 //  write32(0x1098, 0xE665);
-    
+
     //Enable VME BLT readout
     write16(REG_READOUT_CONTROL,1<<4);
 
@@ -352,7 +352,7 @@ size_t V1730::readoutBLT_evtsz(char *buffer, size_t buffer_size) {
 V1730Decoder::V1730Decoder(size_t _eventBuffer, V1730Settings &_settings) : eventBuffer(_eventBuffer), settings(_settings) {
 
     dispatch_index = decode_counter = chanagg_counter = boardagg_counter = 0;
-    
+
     counters = vector<uint32_t>();
     timetags = vector<uint32_t>();
     exttimetags = vector<uint16_t>();
@@ -368,7 +368,7 @@ V1730Decoder::V1730Decoder(size_t _eventBuffer, V1730Settings &_settings) : even
             }
         }
     }
-    
+
     clock_gettime(CLOCK_MONOTONIC,&last_decode_time);
 
 }
@@ -382,19 +382,19 @@ V1730Decoder::~V1730Decoder() {
 
 void V1730Decoder::decode(Buffer &buf) {
     vector<size_t> lastgrabbed(grabbed);
-    
+
     decode_size = buf.fill();
     cout << settings.getIndex() << " decoding " << decode_size << " bytes." << endl;
     uint32_t *next = (uint32_t*)buf.rptr(), *start = (uint32_t*)buf.rptr();
     while ((size_t)((next = decode_board_agg(next)) - start + 1)*4 < decode_size);
     buf.dec(decode_size);
     decode_counter++;
-    
+
     struct timespec cur_time;
     clock_gettime(CLOCK_MONOTONIC,&cur_time);
     double time_int = (cur_time.tv_sec - last_decode_time.tv_sec)+1e-9*(cur_time.tv_nsec - last_decode_time.tv_nsec);
     last_decode_time = cur_time;
-    
+
 //  for (size_t i = 0; i < idx2chan.size(); i++) {
 //      size_t nev = grabbed[i] - lastgrabbed[i];
 //      double trate = nev / time_int;
@@ -423,69 +423,153 @@ size_t V1730Decoder::eventsReady() {
 
 using namespace H5;
 
-// ATM: move this to the H5 dispatcher, calls decoder's pack.
+//MBS: Revert to Ed's writeOut function due to issues with DigitizerData struct
 void V1730Decoder::writeOut(H5File &file, size_t nEvents) {
-    DigitizerData data;
-    pack(&data, nEvents);
+
+//  cout << "\t/" << settings.getIndex() << endl;
 
     Group cardgroup = file.createGroup("/"+settings.getIndex());
-        
+
     DataSpace scalar(0,NULL);
-    
+
+    double dval;
+    uint32_t ival;
+
     Attribute bits = cardgroup.createAttribute("bits",PredType::NATIVE_UINT32,scalar);
-    bits.write(PredType::NATIVE_INT32, &data.bits);
-    
+    ival = 14;
+    bits.write(PredType::NATIVE_INT32,&ival);
+
     Attribute ns_sample = cardgroup.createAttribute("ns_sample",PredType::NATIVE_DOUBLE,scalar);
-    ns_sample.write(PredType::NATIVE_DOUBLE, &data.ns_sample);
+    dval = 2.0;
+    ns_sample.write(PredType::NATIVE_DOUBLE,&dval);
 
     Attribute samples = cardgroup.createAttribute("samples",PredType::NATIVE_UINT32,scalar);
-    samples.write(PredType::NATIVE_UINT32, &data.samples);
+    ival = static_cast<uint32_t>(settings.getRecordLength());
+    samples.write(PredType::NATIVE_UINT32,&ival);
 
     hsize_t dims[1];
     dims[0] = nEvents;
     DataSpace space(1, dims);
     DataSet counters_ds = cardgroup.createDataSet("counters", PredType::NATIVE_UINT32, space);
-    counters_ds.write(&data.counters, PredType::NATIVE_UINT32);
+    counters_ds.write(counters.data(), PredType::NATIVE_UINT32);
     DataSet timetags_ds = cardgroup.createDataSet("timetags", PredType::NATIVE_UINT32, space);
-    timetags_ds.write(&data.timetags, PredType::NATIVE_UINT32);
+    timetags_ds.write(timetags.data(), PredType::NATIVE_UINT32);
     DataSet exttimetags_ds = cardgroup.createDataSet("exttimetags", PredType::NATIVE_UINT16, space);
-    exttimetags_ds.write(&data.exttimetags, PredType::NATIVE_UINT16);
-    
+    exttimetags_ds.write(exttimetags.data(), PredType::NATIVE_UINT16);
+
     for (size_t i = 0; i < nsamples.size(); i++) {
-        DigitizerData::ChannelData& ch = data.channels[i];
-    
-        string chname = "ch" + to_string(ch.chID);
+
+        string chname = "ch" + to_string(idx2chan[i]);
         Group group = cardgroup.createGroup(chname);
         string groupname = "/"+settings.getIndex()+"/"+chname;
-        
+
+//      cout << "\t" << groupname << endl;
+
         Attribute offset = group.createAttribute("offset",PredType::NATIVE_UINT32,scalar);
-        offset.write(PredType::NATIVE_UINT32, &ch.offset);
-        
+        ival = settings.getDCOffset(idx2chan[i]);
+        offset.write(PredType::NATIVE_UINT32,&ival);
+
         Attribute threshold = group.createAttribute("threshold",PredType::NATIVE_UINT32,scalar);
-        threshold.write(PredType::NATIVE_UINT32, &ch.threshold);
+        ival = settings.getThreshold(idx2chan[i]);
+        threshold.write(PredType::NATIVE_UINT32,&ival);
 
 	Attribute dynamic_range = group.createAttribute("dynamic_range",PredType::NATIVE_DOUBLE,scalar);
-	dynamic_range.write(PredType::NATIVE_DOUBLE, &ch.dynamic_range);
+	dval = settings.getDynamicRange(idx2chan[i]);
+	dynamic_range.write(PredType::NATIVE_DOUBLE,&dval);
 
         hsize_t dimensions[2];
-        dimensions[0] = data.nEvents;
+        dimensions[0] = nEvents;
         dimensions[1] = nsamples[i];
 
         DataSpace samplespace(2, dimensions);
         DataSpace metaspace(1, dimensions);
 
+//      cout << "\t" << groupname << "/samples" << endl;
         DataSet samples_ds = file.createDataSet(groupname+"/samples", PredType::NATIVE_UINT16, samplespace);
-        samples_ds.write(&ch.samples[i], PredType::NATIVE_UINT16);
-        
-        DataSet patterns_ds = file.createDataSet(groupname+"/patterns", PredType::NATIVE_UINT16, metaspace);
-        patterns_ds.write(&ch.patterns[i], PredType::NATIVE_UINT16);
-    }
-    
-    //dispatch_index -= nEvents;
+        samples_ds.write(grabs[i], PredType::NATIVE_UINT16);
+        memmove(grabs[i],grabs[i]+nEvents*nsamples[i],nsamples[i]*sizeof(uint16_t)*(grabbed[i]-nEvents));
 
-    //if (dispatch_index < 0)
-    //    dispatch_index = 0;
+//      cout << "\t" << groupname << "/patterns" << endl;
+        DataSet patterns_ds = file.createDataSet(groupname+"/patterns", PredType::NATIVE_UINT16, metaspace);
+        patterns_ds.write(patterns[i], PredType::NATIVE_UINT16);
+        memmove(patterns[i],patterns[i]+nEvents,sizeof(uint16_t)*(grabbed[i]-nEvents));
+
+//      TODO might be worth monitoring somehow
+//      cout << "\t" << groupname << "/baselines" << endl;
+//      DataSet baselines_ds = file.createDataSet(groupname+"/baselines", PredType::NATIVE_UINT16, metaspace);
+//      baselines_ds.write(baselines[i], PredType::NATIVE_UINT16);
+//      memmove(baselines[i],baselines[i]+nEvents,sizeof(uint16_t)*(grabbed[i]-nEvents));
+
+        grabbed[i] -= nEvents;
+    }
+
+    dispatch_index -= nEvents;
+    if (dispatch_index < 0) dispatch_index = 0;
 }
+
+//// ATM: move this to the H5 dispatcher, calls decoder's pack.
+//void V1730Decoder::writeOut(H5File &file, size_t nEvents) {
+//    DigitizerData data;
+//    pack(&data, nEvents);
+//
+//    Group cardgroup = file.createGroup("/"+settings.getIndex());
+//
+//    DataSpace scalar(0,NULL);
+//
+//    Attribute bits = cardgroup.createAttribute("bits",PredType::NATIVE_UINT32,scalar);
+//    bits.write(PredType::NATIVE_INT32, &data.bits);
+//
+//    Attribute ns_sample = cardgroup.createAttribute("ns_sample",PredType::NATIVE_DOUBLE,scalar);
+//    ns_sample.write(PredType::NATIVE_DOUBLE, &data.ns_sample);
+//
+//    Attribute samples = cardgroup.createAttribute("samples",PredType::NATIVE_UINT32,scalar);
+//    samples.write(PredType::NATIVE_UINT32, &data.samples);
+//
+//    hsize_t dims[1];
+//    dims[0] = nEvents;
+//    DataSpace space(1, dims);
+//    DataSet counters_ds = cardgroup.createDataSet("counters", PredType::NATIVE_UINT32, space);
+//    counters_ds.write(&data.counters, PredType::NATIVE_UINT32);
+//    DataSet timetags_ds = cardgroup.createDataSet("timetags", PredType::NATIVE_UINT32, space);
+//    timetags_ds.write(&data.timetags, PredType::NATIVE_UINT32);
+//    DataSet exttimetags_ds = cardgroup.createDataSet("exttimetags", PredType::NATIVE_UINT16, space);
+//    exttimetags_ds.write(&data.exttimetags, PredType::NATIVE_UINT16);
+//
+//    for (size_t i = 0; i < nsamples.size(); i++) {
+//        DigitizerData::ChannelData& ch = data.channels[i];
+//
+//        string chname = "ch" + to_string(ch.chID);
+//        Group group = cardgroup.createGroup(chname);
+//        string groupname = "/"+settings.getIndex()+"/"+chname;
+//
+//        Attribute offset = group.createAttribute("offset",PredType::NATIVE_UINT32,scalar);
+//        offset.write(PredType::NATIVE_UINT32, &ch.offset);
+//
+//        Attribute threshold = group.createAttribute("threshold",PredType::NATIVE_UINT32,scalar);
+//        threshold.write(PredType::NATIVE_UINT32, &ch.threshold);
+//
+//	Attribute dynamic_range = group.createAttribute("dynamic_range",PredType::NATIVE_DOUBLE,scalar);
+//	dynamic_range.write(PredType::NATIVE_DOUBLE, &ch.dynamic_range);
+//
+//        hsize_t dimensions[2];
+//        dimensions[0] = data.nEvents;
+//        dimensions[1] = nsamples[i];
+//
+//        DataSpace samplespace(2, dimensions);
+//        DataSpace metaspace(1, dimensions);
+//
+//        DataSet samples_ds = file.createDataSet(groupname+"/samples", PredType::NATIVE_UINT16, samplespace);
+//        samples_ds.write(&ch.samples[i], PredType::NATIVE_UINT16);
+//
+//        DataSet patterns_ds = file.createDataSet(groupname+"/patterns", PredType::NATIVE_UINT16, metaspace);
+//        patterns_ds.write(&ch.patterns[i], PredType::NATIVE_UINT16);
+//    }
+//
+//    //dispatch_index -= nEvents;
+//
+//    //if (dispatch_index < 0)
+//    //    dispatch_index = 0;
+//}
 
 uint32_t* V1730Decoder::decode_chan_agg(uint32_t *chanagg, uint32_t chn, uint16_t pattern) {
 
@@ -494,21 +578,21 @@ uint32_t* V1730Decoder::decode_chan_agg(uint32_t *chanagg, uint32_t chn, uint16_
     // which confirms that bits 30:31 and 14:15 are 0, in accordance with docs
 //  const bool format_flag = ...
 //  if (!format_flag) throw runtime_error("Channel format not found");
-    
+
     chanagg_counter++;
-   
+
     //const uint32_t size = chanagg[0] & 0x7FFF;
     //const uint32_t format = chanagg[1];
     //const uint32_t samples = (format & 0xFFF)*8;
-   
-    
+
+
     const uint32_t idx = chan2idx[chn];
     const uint32_t len = nsamples[idx];
 
     if (idx == 999) throw runtime_error("Received data for disabled channel (" + to_string(chn) + ")");
 
     //if (len != samples) throw runtime_error("Number of samples received " + to_string(samples) + " does not match expected " + to_string(len) + " (" + to_string(idx2chan[idx]) + ")");
-        
+
     if (eventBuffer) {
         const size_t ev = grabbed[idx]++;
         if (ev == eventBuffer) throw runtime_error("Decoder buffer for " + settings.getIndex() + " overflowed!");
@@ -523,7 +607,7 @@ uint32_t* V1730Decoder::decode_chan_agg(uint32_t *chanagg, uint32_t chn, uint16_
                 data[sample+0] = *word & 0x3FFF;
                 data[sample+1] = (*word >> 16) & 0x3FFF;
         }
-            
+
         patterns[idx][ev] = pattern;
     } else {
         grabbed[idx]++;
@@ -538,13 +622,13 @@ uint32_t* V1730Decoder::decode_board_agg(uint32_t *boardagg) {
     if (boardagg[0] == 0xFFFFFFFF) {
         boardagg++; //sometimes padded
     }
-    if ((boardagg[0] & 0xF0000000) != 0xA0000000) 
+    if ((boardagg[0] & 0xF0000000) != 0xA0000000)
         throw runtime_error("Board aggregate missing tag");
-    
-    boardagg_counter++;    
-    
+
+    boardagg_counter++;
+
     uint32_t size = boardagg[0] & 0x0FFFFFFF;
-    
+
     //const uint32_t board = (boardagg[1] >> 28) & 0xF;
     const bool fail = boardagg[1] & (1 << 26);
     if (fail){
@@ -557,22 +641,24 @@ uint32_t* V1730Decoder::decode_board_agg(uint32_t *boardagg) {
 
     const uint32_t counter = static_cast<uint32_t>(boardagg[2] & 0x00FFFFFF);
     const uint32_t timetag = boardagg[3];
+    std::cout << "Time Tag: " << timetag << std::endl;
     const uint16_t exttimetag = settings.getETTTEnabled() ? ((boardagg[1] >> 8) & 0xFFFF) : 0 ; // ETTT bits if ETTT mode, else 0
+    std::cout << "Ext Time Tag: " << exttimetag << std::endl;
     counters.push_back(counter);
     timetags.push_back(timetag);
     exttimetags.push_back(exttimetag);
 //  cout << "\t(LVDS & 0xFF): " << (pattern & 0xFF) << endl;
-    
+
     //const uint32_t count = boardagg[2] & 0x7FFFFF;
     //const uint32_t timetag = boardagg[3];
-    
+
     uint32_t *chans = boardagg+4;
-    
+
     for (uint32_t ch = 0; ch < 16; ch++) { // note again, this only loops through 8 groups with 8 masks. We actually have 16 masks in the event structure.
         if (mask & (1 << ch)) {
             chans = decode_chan_agg(chans,ch,pattern);
         }
-    } 
+    }
     if (chans != boardagg+size){
         throw runtime_error("predicted end of board aggregate != end of channel aggregates");
     }
@@ -593,8 +679,8 @@ void V1730Decoder::pack(DigitizerData* ddd, size_t nEvents) {
     memcpy(&data.timetags, timetags.data(), nEvents*sizeof(uint32_t));
     memcpy(&data.exttimetags, exttimetags.data(), nEvents*sizeof(uint16_t));
 
-    timetags.erase(timetags.begin(), timetags.begin() + nEvents);
     exttimetags.erase(exttimetags.begin(), exttimetags.begin() + nEvents);
+    timetags.erase(timetags.begin(), timetags.begin() + nEvents);
     counters.erase(counters.begin(), counters.begin() + nEvents);
 
     for (size_t i = 0; i < nsamples.size(); i++) {
