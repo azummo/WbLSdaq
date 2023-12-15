@@ -54,7 +54,7 @@ int main(int argc, char **argv) {
     signal(SIGUSR1, usr1_handler);
 
 
-    if (argc > 1) {
+    if (argc < 3) {
       for (int i = 1 ; i < argc ; i++){
         stop = false;
         readout_running = dispatch_running = false;
@@ -95,7 +95,8 @@ int main(int argc, char **argv) {
         cout << "Reading configuration..." << endl;
 
         RunDB db;
-        db.addFile("/home/eos/WbLSdaq/example-v1730-config.json");
+        //db.addFile("/home/eos/WbLSdaq/example-v1730-config.json");
+        db.addFile(argv[1]);
         RunTable run = db.getTable("RUN");
 
         readout_thread_data data;
