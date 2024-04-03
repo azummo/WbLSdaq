@@ -421,14 +421,23 @@ void *readout(void *_data){
             if (cur_time.tv_sec-last_temp_time.tv_sec > temptime) {
                 pthread_mutex_lock(&iomutex);
                 last_temp_time = cur_time;
-                cout << "Temperature check..." << endl;
+                cout << "Temperature check...";
                 bool overtemp = false;
-                for (size_t i = 0; i < digitizers.size() && !stop; i++) {
+                int warning_count = 0;
+		for (size_t i = 0; i < digitizers.size() && !stop; i++) {
                     overtemp |= digitizers[i]->checkTemps(temps,84);
-                    cout << settings[i]->getIndex() << " temp: [ " << temps[0];
-                    for (size_t t = 1; t < temps.size(); t++) cout << ", " << temps[t];
-                    cout << " ]" << endl;
+                    for (size_t t = 1; t < temps.size(); t++){
+	                if(temps[t] > 65){
+		            warning_count += 1;
+			}
+	            }
                 }
+		if(warning_count > 0){
+		    cout << "WARNING: " << warning_count << " temps above 65 deg." << endl;
+		}
+		else{
+	            cout << "All below 65 deg." << endl;
+		}
                 if (overtemp) {
                     cout << "Overtemp! Aborting readout." << endl;
                     stop = true;

@@ -44,6 +44,7 @@ void *dispatch_thread(void *_data) {
 
     vector<size_t> evtsReady(data->buffers->size());
     data->runtype->begin();
+    bool print = false; 
     try {
         dispatch_running = true;
         while (dispatch_running) {
@@ -56,15 +57,14 @@ void *dispatch_thread(void *_data) {
                 if (found) break;
                 pthread_cond_wait(data->newdata,data->iomutex);
             }
-            
+
             size_t total = data->dispatcher->Digest(*data->buffers);
+            string path = data->dispatcher->NextPath();
             if (stop && total == 0) {
                 dispatch_running = false;
-            } else if (stop || data->dispatcher->Ready()) {
+            } else if (stop || data->dispatcher->Ready(print, path)) {
                 Exception::dontPrint();
 
-                string path = data->dispatcher->NextPath();
-                cout << "Streaming data to " << path << endl;
                 data->dispatcher->Dispatch(*data->buffers);
                 dispatch_running = data->runtype->keepgoing();
             }
