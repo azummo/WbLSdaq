@@ -643,7 +643,7 @@ uint32_t* V1730Decoder::decode_board_agg(uint32_t *boardagg) {
     const uint32_t timetag = boardagg[3];
     std::cout << "Time Tag: " << timetag << std::endl;
     const uint16_t exttimetag = settings.getETTTEnabled() ? ((boardagg[1] >> 8) & 0xFFFF) : 0 ; // ETTT bits if ETTT mode, else 0
-    std::cout << "Ext Time Tag: " << exttimetag << std::endl;
+    std::cout << "Ext Time Tag (en=" << settings.getETTTEnabled() << "): " << exttimetag << std::endl;
     counters.push_back(counter);
     timetags.push_back(timetag);
     exttimetags.push_back(exttimetag);

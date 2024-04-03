@@ -11,6 +11,7 @@
 #include <Dispatcher.hh>
 #include <TCPDispatcher.hh>
 #include <ZMQDispatcher.hh>
+#include <NetDispatcher.hh>
 #include <LegacyHDF5Dispatcher.hh>
 #include <SocketDispatcher.hh>
 #include <SoftwareTrigger.hh>
@@ -278,6 +279,12 @@ void *readout(void *_data){
         int nEvents = run["events"].cast<int>();
         string address = run["address"].cast<string>();
         dispatcher = new ZMQDispatcher(nEvents, address, decoders);
+    }
+    else if (dispstr == "net"){
+        int nEvents = run["events"].cast<int>();
+        string address = run["address"].cast<string>();
+        int port = run["port"].cast<int>();
+        dispatcher = new NetDispatcher(nEvents, address, port, decoders);
     }
     else if (dispstr == "tcp"){
         int nEvents = run["events"].cast<int>();
