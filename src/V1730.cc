@@ -392,14 +392,14 @@ void V1730Decoder::decode(Buffer &buf) {
 
     struct timespec cur_time;
     clock_gettime(CLOCK_MONOTONIC,&cur_time);
-    //double time_int = (cur_time.tv_sec - last_decode_time.tv_sec)+1e-9*(cur_time.tv_nsec - last_decode_time.tv_nsec);
-    //last_decode_time = cur_time;
+    double time_int = (cur_time.tv_sec - last_decode_time.tv_sec)+1e-9*(cur_time.tv_nsec - last_decode_time.tv_nsec);
+    last_decode_time = cur_time;
 
-    // double nmb = decode_size / pow(1024, 2);
-    // double drate = nmb / time_int;
-    //cout << "\t\t data rate: "
-    //     << drate << " MB/s"
-    //     << endl;
+     double nmb = decode_size / pow(1024, 2);
+     double drate = nmb / time_int;
+     cout << "\t\t data rate: "
+         << drate << " MB/s"
+         << endl;
 }
 
 size_t V1730Decoder::eventsReady() {
@@ -438,14 +438,14 @@ void V1730Decoder::writeOut(H5File &file, size_t nEvents) {
     dims[0] = nEvents;
     DataSpace space(1, dims);
 
-    std::cout << "Length counters: " << counters.size() << std::endl;
-
     DataSet counters_ds = cardgroup.createDataSet("counters", PredType::NATIVE_UINT32, space);
     counters_ds.write(counters.data(), PredType::NATIVE_UINT32);
     DataSet timetags_ds = cardgroup.createDataSet("timetags", PredType::NATIVE_UINT32, space);
     timetags_ds.write(timetags.data(), PredType::NATIVE_UINT32);
     DataSet exttimetags_ds = cardgroup.createDataSet("exttimetags", PredType::NATIVE_UINT16, space);
     exttimetags_ds.write(exttimetags.data(), PredType::NATIVE_UINT16);
+
+    std::cout << "Event count: " << counters.size() << std::endl; 
 
     for (size_t i = 0; i < nsamples.size(); i++) {
 
@@ -558,7 +558,7 @@ uint32_t* V1730Decoder::decode_board_agg(uint32_t *boardagg) {
     //const uint32_t board = (boardagg[1] >> 28) & 0xF;
     const bool fail = boardagg[1] & (1 << 26);
     if (fail){
-        throw runtime_error("board fail flag set. check with an expert.");
+        throw runtime_error("board fail flag set " + to_string(boardagg_counter));
     }
     //const uint16_t pattern = (boardagg[1] >> 8) & 0x7FFF;
     const uint16_t pattern = settings.getETTTEnabled() ? 0 : ((boardagg[1] >> 8) & 0xFFFF); // this has been changed; 0 if ETTT mode, else LVDS I/O pattern
