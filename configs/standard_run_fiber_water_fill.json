@@ -1,15 +1,16 @@
 {
 // Run settings
 name: "RUN",
-run_number: 0,
-outfile: "/home/eos/data/water_fill/fiber_3_1/fiber-3-1-run-0",
+run_number: 4,
+outfile: "/home/eos/data/water_fill/fiber_4_5/fiber-4-5-run-0",
 runtype: "nevents",
 events: 1700,
 repeat_times: 100,
 event_buffer_size: 1000,
 check_temps_every: 100,
 soft_trig: [],
-fiber_number: 31,
+fiber_number: 45,
+fiber_intensity: 1.0,
 run_type: 2
 }
 
@@ -53,7 +54,7 @@ index: "19857",             // To match card to subtables, data storage
 communication: "optical-link-0",  // channel through which to access board
 base_address: 0,         // node # in CONET network
 record_length: 100,     // # of samples per waveform
-post_trigger: 12, // wait this number * 8 samples before freezing current buffer
+post_trigger: 5, // wait this number * 8 samples before freezing current buffer
 buffer_size: 20,                // Readout circular buffer size in MiB
 coincidence_window: 0,          // time window for majority coincidence is this number * 8 ns
 global_majority_level: 0,       // this number + 1 requests required for global trigger
@@ -308,7 +309,7 @@ index: "19858",             // To match card to subtables, data storage
 communication: "optical-link-0",  // channel through which to access board
 base_address: 1,         // node # in CONET network
 record_length: 100,     // # of samples per waveform
-post_trigger: 12, // wait this number * 8 samples before freezing current buffer
+post_trigger: 5, // wait this number * 8 samples before freezing current buffer
 buffer_size: 20,                // Readout circular buffer size in MiB
 coincidence_window: 0,          // time window for majority coincidence is this number * 8 ns
 global_majority_level: 0,       // this number + 1 requests required for global trigger
@@ -563,7 +564,7 @@ index: "24190",             // To match card to subtables, data storage
 communication: "optical-link-0",  // channel through which to access board
 base_address: 2,         // node # in CONET network
 record_length: 100,     // # of samples per waveform
-post_trigger: 12, // wait this number * 8 samples before freezing current buffer
+post_trigger: 5, // wait this number * 8 samples before freezing current buffer
 buffer_size: 20,                // Readout circular buffer size in MiB
 coincidence_window: 0,          // time window for majority coincidence is this number * 8 ns
 global_majority_level: 0,       // this number + 1 requests required for global trigger
@@ -818,7 +819,7 @@ index: "24191",             // To match card to subtables, data storage
 communication: "optical-link-0",  // channel through which to access board
 base_address: 3,         // node # in CONET network
 record_length: 100,     // # of samples per waveform
-post_trigger: 12, // wait this number * 8 samples before freezing current buffer
+post_trigger: 5, // wait this number * 8 samples before freezing current buffer
 buffer_size: 20,                // Readout circular buffer size in MiB
 coincidence_window: 0,          // time window for majority coincidence is this number * 8 ns
 global_majority_level: 0,       // this number + 1 requests required for global trigger
@@ -1073,7 +1074,7 @@ index: "24192",             // To match card to subtables, data storage
 communication: "optical-link-0",  // channel through which to access board
 base_address: 4,         // node # in CONET network
 record_length: 100,     // # of samples per waveform
-post_trigger: 12, // wait this number * 8 samples before freezing current buffer
+post_trigger: 5, // wait this number * 8 samples before freezing current buffer
 buffer_size: 20,                // Readout circular buffer size in MiB
 coincidence_window: 0,          // time window for majority coincidence is this number * 8 ns
 global_majority_level: 0,       // this number + 1 requests required for global trigger
@@ -1328,7 +1329,7 @@ index: "24193",             // To match card to subtables, data storage
 communication: "optical-link-1",  // channel through which to access board
 base_address: 0,         // node # in CONET network
 record_length: 100,     // # of samples per waveform
-post_trigger: 12, // wait this number * 8 samples before freezing current buffer
+post_trigger: 5, // wait this number * 8 samples before freezing current buffer
 buffer_size: 20,                // Readout circular buffer size in MiB
 coincidence_window: 0,          // time window for majority coincidence is this number * 8 ns
 global_majority_level: 0,       // this number + 1 requests required for global trigger
@@ -1583,7 +1584,7 @@ index: "24194",             // To match card to subtables, data storage
 communication: "optical-link-1",  // channel through which to access board
 base_address: 1,         // node # in CONET network
 record_length: 100,     // # of samples per waveform
-post_trigger: 12, // wait this number * 8 samples before freezing current buffer
+post_trigger: 5, // wait this number * 8 samples before freezing current buffer
 buffer_size: 20,                // Readout circular buffer size in MiB
 coincidence_window: 0,          // time window for majority coincidence is this number * 8 ns
 global_majority_level: 0,       // this number + 1 requests required for global trigger
@@ -1838,7 +1839,7 @@ index: "24195",             // To match card to subtables, data storage
 communication: "optical-link-1",  // channel through which to access board
 base_address: 2,         // node # in CONET network
 record_length: 100,     // # of samples per waveform
-post_trigger: 12, // wait this number * 8 samples before freezing current buffer
+post_trigger: 5, // wait this number * 8 samples before freezing current buffer
 buffer_size: 20,                // Readout circular buffer size in MiB
 coincidence_window: 0,          // time window for majority coincidence is this number * 8 ns
 global_majority_level: 0,       // this number + 1 requests required for global trigger
@@ -2093,7 +2094,7 @@ index: "24196",             // To match card to subtables, data storage
 communication: "optical-link-1",  // channel through which to access board
 base_address: 3,         // node # in CONET network
 record_length: 100,     // # of samples per waveform
-post_trigger: 12, // wait this number * 8 samples before freezing current buffer
+post_trigger: 5, // wait this number * 8 samples before freezing current buffer
 buffer_size: 20,                // Readout circular buffer size in MiB
 coincidence_window: 0,          // time window for majority coincidence is this number * 8 ns
 global_majority_level: 0,       // this number + 1 requests required for global trigger
@@ -2348,7 +2349,7 @@ index: "24305",             // To match card to subtables, data storage
 communication: "optical-link-2",  // channel through which to access board
 base_address: 0,         // node # in CONET network
 record_length: 100,     // # of samples per waveform
-post_trigger: 12, // wait this number * 8 samples before freezing current buffer
+post_trigger: 5, // wait this number * 8 samples before freezing current buffer
 buffer_size: 20,                // Readout circular buffer size in MiB
 coincidence_window: 0,          // time window for majority coincidence is this number * 8 ns
 global_majority_level: 0,       // this number + 1 requests required for global trigger
@@ -2603,7 +2604,7 @@ index: "24306",             // To match card to subtables, data storage
 communication: "optical-link-2",  // channel through which to access board
 base_address: 1,         // node # in CONET network
 record_length: 100,     // # of samples per waveform
-post_trigger: 12, // wait this number * 8 samples before freezing current buffer
+post_trigger: 5, // wait this number * 8 samples before freezing current buffer
 buffer_size: 20,                // Readout circular buffer size in MiB
 coincidence_window: 0,          // time window for majority coincidence is this number * 8 ns
 global_majority_level: 0,       // this number + 1 requests required for global trigger
@@ -2858,7 +2859,7 @@ index: "24307",             // To match card to subtables, data storage
 communication: "optical-link-2",  // channel through which to access board
 base_address: 2,         // node # in CONET network
 record_length: 100,     // # of samples per waveform
-post_trigger: 12, // wait this number * 8 samples before freezing current buffer
+post_trigger: 5, // wait this number * 8 samples before freezing current buffer
 buffer_size: 20,                // Readout circular buffer size in MiB
 coincidence_window: 0,          // time window for majority coincidence is this number * 8 ns
 global_majority_level: 0,       // this number + 1 requests required for global trigger
@@ -3113,7 +3114,7 @@ index: "24308",             // To match card to subtables, data storage
 communication: "optical-link-2",  // channel through which to access board
 base_address: 3,         // node # in CONET network
 record_length: 100,     // # of samples per waveform
-post_trigger: 12, // wait this number * 8 samples before freezing current buffer
+post_trigger: 5, // wait this number * 8 samples before freezing current buffer
 buffer_size: 20,                // Readout circular buffer size in MiB
 coincidence_window: 0,          // time window for majority coincidence is this number * 8 ns
 global_majority_level: 0,       // this number + 1 requests required for global trigger
@@ -3368,7 +3369,7 @@ index: "24309",             // To match card to subtables, data storage
 communication: "optical-link-3",  // channel through which to access board
 base_address: 0,         // node # in CONET network
 record_length: 100,     // # of samples per waveform
-post_trigger: 12, // wait this number * 8 samples before freezing current buffer
+post_trigger: 5, // wait this number * 8 samples before freezing current buffer
 buffer_size: 20,                // Readout circular buffer size in MiB
 coincidence_window: 0,          // time window for majority coincidence is this number * 8 ns
 global_majority_level: 0,       // this number + 1 requests required for global trigger
@@ -3623,7 +3624,7 @@ index: "24310",             // To match card to subtables, data storage
 communication: "optical-link-3",  // channel through which to access board
 base_address: 1,         // node # in CONET network
 record_length: 100,     // # of samples per waveform
-post_trigger: 12, // wait this number * 8 samples before freezing current buffer
+post_trigger: 5, // wait this number * 8 samples before freezing current buffer
 buffer_size: 20,                // Readout circular buffer size in MiB
 coincidence_window: 0,          // time window for majority coincidence is this number * 8 ns
 global_majority_level: 0,       // this number + 1 requests required for global trigger
@@ -3878,7 +3879,7 @@ index: "24311",             // To match card to subtables, data storage
 communication: "optical-link-3",  // channel through which to access board
 base_address: 2,         // node # in CONET network
 record_length: 100,     // # of samples per waveform
-post_trigger: 12, // wait this number * 8 samples before freezing current buffer
+post_trigger: 5, // wait this number * 8 samples before freezing current buffer
 buffer_size: 20,                // Readout circular buffer size in MiB
 coincidence_window: 0,          // time window for majority coincidence is this number * 8 ns
 global_majority_level: 0,       // this number + 1 requests required for global trigger
@@ -4133,7 +4134,7 @@ index: "24312",             // To match card to subtables, data storage
 communication: "optical-link-3",  // channel through which to access board
 base_address: 3,         // node # in CONET network
 record_length: 100,     // # of samples per waveform
-post_trigger: 12, // wait this number * 8 samples before freezing current buffer
+post_trigger: 5, // wait this number * 8 samples before freezing current buffer
 buffer_size: 20,                // Readout circular buffer size in MiB
 coincidence_window: 0,          // time window for majority coincidence is this number * 8 ns
 global_majority_level: 0,       // this number + 1 requests required for global trigger
