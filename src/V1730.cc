@@ -392,14 +392,14 @@ void V1730Decoder::decode(Buffer &buf) {
 
     struct timespec cur_time;
     clock_gettime(CLOCK_MONOTONIC,&cur_time);
-    double time_int = (cur_time.tv_sec - last_decode_time.tv_sec)+1e-9*(cur_time.tv_nsec - last_decode_time.tv_nsec);
-    last_decode_time = cur_time;
+    //double time_int = (cur_time.tv_sec - last_decode_time.tv_sec)+1e-9*(cur_time.tv_nsec - last_decode_time.tv_nsec);
+    //last_decode_time = cur_time;
 
-     double nmb = decode_size / pow(1024, 2);
-     double drate = nmb / time_int;
-     cout << "\t\t data rate: "
-         << drate << " MB/s"
-         << endl;
+    // double nmb = decode_size / pow(1024, 2);
+    // double drate = nmb / time_int;
+    // cout << "\t\t data rate: "
+    //     << drate << " MB/s"
+    //     << endl;
 }
 
 size_t V1730Decoder::eventsReady() {
