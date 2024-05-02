@@ -38,7 +38,7 @@ size_t LegacyHDF5Dispatcher::Digest(vector<Buffer*>& buffers){
 
 void LegacyHDF5Dispatcher::Dispatch(vector<Buffer*>& buffers){
     string fname = this->NextPath();
-    cout << "Saving data to " << fname << endl;
+    // cout << "Saving data to " << fname << endl;
     
     H5File file(fname, H5F_ACC_TRUNC);
     this->Initialize(file);
