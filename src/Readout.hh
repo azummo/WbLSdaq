@@ -288,8 +288,9 @@ void *readout(void *_data){
     }
     else if (dispstr == "tcp"){
         int nEvents = run["events"].cast<int>();
-        int port = run["port"].cast<int>();
-        dispatcher = new TCPDispatcher(nEvents, port, decoders);
+	std::string address = run["address"].cast<string>();
+        std::string port = run["port"].cast<string>();
+        dispatcher = new TCPDispatcher(nEvents, address, port, decoders);
     }
     if (!dispatcher){
         cerr << "error: dispatcher type "
