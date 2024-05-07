@@ -6,19 +6,21 @@
 #include <netdb.h>
 
 TCPDispatcher::TCPDispatcher(size_t _nEvents,
-                             int _port,
+                             std::string _address,
+                             std::string _port,
                              vector<Decoder*> _decoders)
     : Dispatcher(_nEvents, _decoders.size()),
-      port(_port),
       decoders(_decoders) {
+  struct addrinfo hints, *res;
+  memset(&hints, 0, sizeof hints);
+  hints.ai_family = AF_UNSPEC;
+  hints.ai_socktype = SOCK_STREAM;
+  getaddrinfo(_address.c_str(), _port.c_str(), &hints, &res);
+
   this->sockfd = socket(AF_INET, SOCK_STREAM, 0);
-  struct sockaddr_in saddr;
-  saddr.sin_family = AF_INET;
-  saddr.sin_addr.s_addr = INADDR_ANY;
-  saddr.sin_port = htons(port);
-  int s = connect(sockfd, (struct sockaddr*) &saddr, sizeof(saddr));
+  int s = connect(sockfd, res->ai_addr, res->ai_addrlen);
   if (s < 0) {
-    printf("oh no an error %i\n", s);
+    printf("Error: Unable to connect to TCP server at %s:%s\n", _address.c_str(), _port.c_str());
     pthread_exit(NULL);
   }
 }

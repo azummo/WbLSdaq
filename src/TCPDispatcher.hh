@@ -9,7 +9,8 @@ class TCPDispatcher: public Dispatcher {
 public:
   TCPDispatcher() : Dispatcher() {}
   TCPDispatcher(size_t _nEvents,
-                int port,
+                std::string _address,
+                std::string _port,
                 vector<Decoder*> _decoders);
  ~TCPDispatcher();
 
@@ -18,7 +19,6 @@ public:
   void Dispatch(vector<Buffer*>& buffers);
 
 protected:
-  int port;
   int sockfd;
 
   DigitizerData data;
