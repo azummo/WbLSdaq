@@ -384,7 +384,7 @@ void V1730Decoder::decode(Buffer &buf) {
     vector<size_t> lastgrabbed(grabbed);
 
     decode_size = buf.fill();
-    cout << settings.getIndex() << " decoding " << decode_size << " bytes." << endl;
+    //cout << settings.getIndex() << " decoding " << decode_size << " bytes." << endl;
     uint32_t *next = (uint32_t*)buf.rptr(), *start = (uint32_t*)buf.rptr();
     while ((size_t)((next = decode_board_agg(next)) - start + 1)*4 < decode_size);
     buf.dec(decode_size);
@@ -392,25 +392,14 @@ void V1730Decoder::decode(Buffer &buf) {
 
     struct timespec cur_time;
     clock_gettime(CLOCK_MONOTONIC,&cur_time);
-    double time_int = (cur_time.tv_sec - last_decode_time.tv_sec)+1e-9*(cur_time.tv_nsec - last_decode_time.tv_nsec);
-    last_decode_time = cur_time;
+    //double time_int = (cur_time.tv_sec - last_decode_time.tv_sec)+1e-9*(cur_time.tv_nsec - last_decode_time.tv_nsec);
+    //last_decode_time = cur_time;
 
-//  for (size_t i = 0; i < idx2chan.size(); i++) {
-//      size_t nev = grabbed[i] - lastgrabbed[i];
-//      double trate = nev / time_int;
-//      cout << "\tch" << idx2chan[i]
-//           << "\tev: " << nev
-//           << " / "
-//           << trate << " Hz "
-//           << "/ "
-//           << grabbed[i] << " total"
-//           << endl;
-//  }
-    double nmb = decode_size / pow(1024, 2);
-    double drate = nmb / time_int;
-    cout << "\t\t data rate: "
-         << drate << " MB/s"
-         << endl;
+    // double nmb = decode_size / pow(1024, 2);
+    // double drate = nmb / time_int;
+    // cout << "\t\t data rate: "
+    //     << drate << " MB/s"
+    //     << endl;
 }
 
 size_t V1730Decoder::eventsReady() {
@@ -425,8 +414,6 @@ using namespace H5;
 
 //MBS: Revert to Ed's writeOut function due to issues with DigitizerData struct
 void V1730Decoder::writeOut(H5File &file, size_t nEvents) {
-
-//  cout << "\t/" << settings.getIndex() << endl;
 
     Group cardgroup = file.createGroup("/"+settings.getIndex());
 
@@ -450,6 +437,7 @@ void V1730Decoder::writeOut(H5File &file, size_t nEvents) {
     hsize_t dims[1];
     dims[0] = nEvents;
     DataSpace space(1, dims);
+
     DataSet counters_ds = cardgroup.createDataSet("counters", PredType::NATIVE_UINT32, space);
     counters_ds.write(counters.data(), PredType::NATIVE_UINT32);
     DataSet timetags_ds = cardgroup.createDataSet("timetags", PredType::NATIVE_UINT32, space);
@@ -457,13 +445,13 @@ void V1730Decoder::writeOut(H5File &file, size_t nEvents) {
     DataSet exttimetags_ds = cardgroup.createDataSet("exttimetags", PredType::NATIVE_UINT16, space);
     exttimetags_ds.write(exttimetags.data(), PredType::NATIVE_UINT16);
 
+    std::cout << "Event count: " << counters.size() << std::endl; 
+
     for (size_t i = 0; i < nsamples.size(); i++) {
 
         string chname = "ch" + to_string(idx2chan[i]);
         Group group = cardgroup.createGroup(chname);
         string groupname = "/"+settings.getIndex()+"/"+chname;
-
-//      cout << "\t" << groupname << endl;
 
         Attribute offset = group.createAttribute("offset",PredType::NATIVE_UINT32,scalar);
         ival = settings.getDCOffset(idx2chan[i]);
@@ -484,12 +472,10 @@ void V1730Decoder::writeOut(H5File &file, size_t nEvents) {
         DataSpace samplespace(2, dimensions);
         DataSpace metaspace(1, dimensions);
 
-//      cout << "\t" << groupname << "/samples" << endl;
         DataSet samples_ds = file.createDataSet(groupname+"/samples", PredType::NATIVE_UINT16, samplespace);
         samples_ds.write(grabs[i], PredType::NATIVE_UINT16);
         memmove(grabs[i],grabs[i]+nEvents*nsamples[i],nsamples[i]*sizeof(uint16_t)*(grabbed[i]-nEvents));
 
-//      cout << "\t" << groupname << "/patterns" << endl;
         DataSet patterns_ds = file.createDataSet(groupname+"/patterns", PredType::NATIVE_UINT16, metaspace);
         patterns_ds.write(patterns[i], PredType::NATIVE_UINT16);
         memmove(patterns[i],patterns[i]+nEvents,sizeof(uint16_t)*(grabbed[i]-nEvents));
@@ -503,73 +489,13 @@ void V1730Decoder::writeOut(H5File &file, size_t nEvents) {
         grabbed[i] -= nEvents;
     }
 
+    timetags.clear();
+    exttimetags.clear();
+    counters.clear();
+
     dispatch_index -= nEvents;
     if (dispatch_index < 0) dispatch_index = 0;
 }
-
-//// ATM: move this to the H5 dispatcher, calls decoder's pack.
-//void V1730Decoder::writeOut(H5File &file, size_t nEvents) {
-//    DigitizerData data;
-//    pack(&data, nEvents);
-//
-//    Group cardgroup = file.createGroup("/"+settings.getIndex());
-//
-//    DataSpace scalar(0,NULL);
-//
-//    Attribute bits = cardgroup.createAttribute("bits",PredType::NATIVE_UINT32,scalar);
-//    bits.write(PredType::NATIVE_INT32, &data.bits);
-//
-//    Attribute ns_sample = cardgroup.createAttribute("ns_sample",PredType::NATIVE_DOUBLE,scalar);
-//    ns_sample.write(PredType::NATIVE_DOUBLE, &data.ns_sample);
-//
-//    Attribute samples = cardgroup.createAttribute("samples",PredType::NATIVE_UINT32,scalar);
-//    samples.write(PredType::NATIVE_UINT32, &data.samples);
-//
-//    hsize_t dims[1];
-//    dims[0] = nEvents;
-//    DataSpace space(1, dims);
-//    DataSet counters_ds = cardgroup.createDataSet("counters", PredType::NATIVE_UINT32, space);
-//    counters_ds.write(&data.counters, PredType::NATIVE_UINT32);
-//    DataSet timetags_ds = cardgroup.createDataSet("timetags", PredType::NATIVE_UINT32, space);
-//    timetags_ds.write(&data.timetags, PredType::NATIVE_UINT32);
-//    DataSet exttimetags_ds = cardgroup.createDataSet("exttimetags", PredType::NATIVE_UINT16, space);
-//    exttimetags_ds.write(&data.exttimetags, PredType::NATIVE_UINT16);
-//
-//    for (size_t i = 0; i < nsamples.size(); i++) {
-//        DigitizerData::ChannelData& ch = data.channels[i];
-//
-//        string chname = "ch" + to_string(ch.chID);
-//        Group group = cardgroup.createGroup(chname);
-//        string groupname = "/"+settings.getIndex()+"/"+chname;
-//
-//        Attribute offset = group.createAttribute("offset",PredType::NATIVE_UINT32,scalar);
-//        offset.write(PredType::NATIVE_UINT32, &ch.offset);
-//
-//        Attribute threshold = group.createAttribute("threshold",PredType::NATIVE_UINT32,scalar);
-//        threshold.write(PredType::NATIVE_UINT32, &ch.threshold);
-//
-//	Attribute dynamic_range = group.createAttribute("dynamic_range",PredType::NATIVE_DOUBLE,scalar);
-//	dynamic_range.write(PredType::NATIVE_DOUBLE, &ch.dynamic_range);
-//
-//        hsize_t dimensions[2];
-//        dimensions[0] = data.nEvents;
-//        dimensions[1] = nsamples[i];
-//
-//        DataSpace samplespace(2, dimensions);
-//        DataSpace metaspace(1, dimensions);
-//
-//        DataSet samples_ds = file.createDataSet(groupname+"/samples", PredType::NATIVE_UINT16, samplespace);
-//        samples_ds.write(&ch.samples[i], PredType::NATIVE_UINT16);
-//
-//        DataSet patterns_ds = file.createDataSet(groupname+"/patterns", PredType::NATIVE_UINT16, metaspace);
-//        patterns_ds.write(&ch.patterns[i], PredType::NATIVE_UINT16);
-//    }
-//
-//    //dispatch_index -= nEvents;
-//
-//    //if (dispatch_index < 0)
-//    //    dispatch_index = 0;
-//}
 
 uint32_t* V1730Decoder::decode_chan_agg(uint32_t *chanagg, uint32_t chn, uint16_t pattern) {
 
@@ -622,9 +548,9 @@ uint32_t* V1730Decoder::decode_board_agg(uint32_t *boardagg) {
     if (boardagg[0] == 0xFFFFFFFF) {
         boardagg++; //sometimes padded
     }
-    if ((boardagg[0] & 0xF0000000) != 0xA0000000)
+    if ((boardagg[0] & 0xF0000000) != 0xA0000000){
         throw runtime_error("Board aggregate missing tag");
-
+    }
     boardagg_counter++;
 
     uint32_t size = boardagg[0] & 0x0FFFFFFF;
@@ -632,7 +558,7 @@ uint32_t* V1730Decoder::decode_board_agg(uint32_t *boardagg) {
     //const uint32_t board = (boardagg[1] >> 28) & 0xF;
     const bool fail = boardagg[1] & (1 << 26);
     if (fail){
-        throw runtime_error("board fail flag set. check with an expert.");
+        throw runtime_error("board fail flag set " + to_string(boardagg_counter));
     }
     //const uint16_t pattern = (boardagg[1] >> 8) & 0x7FFF;
     const uint16_t pattern = settings.getETTTEnabled() ? 0 : ((boardagg[1] >> 8) & 0xFFFF); // this has been changed; 0 if ETTT mode, else LVDS I/O pattern
@@ -641,16 +567,10 @@ uint32_t* V1730Decoder::decode_board_agg(uint32_t *boardagg) {
 
     const uint32_t counter = static_cast<uint32_t>(boardagg[2] & 0x00FFFFFF);
     const uint32_t timetag = boardagg[3];
-    std::cout << "Time Tag: " << timetag << std::endl;
     const uint16_t exttimetag = settings.getETTTEnabled() ? ((boardagg[1] >> 8) & 0xFFFF) : 0 ; // ETTT bits if ETTT mode, else 0
-    std::cout << "Ext Time Tag (en=" << settings.getETTTEnabled() << "): " << exttimetag << std::endl;
     counters.push_back(counter);
     timetags.push_back(timetag);
     exttimetags.push_back(exttimetag);
-//  cout << "\t(LVDS & 0xFF): " << (pattern & 0xFF) << endl;
-
-    //const uint32_t count = boardagg[2] & 0x7FFFFF;
-    //const uint32_t timetag = boardagg[3];
 
     uint32_t *chans = boardagg+4;
 
@@ -666,7 +586,7 @@ uint32_t* V1730Decoder::decode_board_agg(uint32_t *boardagg) {
     return boardagg+size;
 }
 
-
+// Not used? TBK
 void V1730Decoder::pack(DigitizerData* ddd, size_t nEvents) {
     DigitizerData& data = *ddd;
     data.nEvents = nEvents;
@@ -679,9 +599,9 @@ void V1730Decoder::pack(DigitizerData* ddd, size_t nEvents) {
     memcpy(&data.timetags, timetags.data(), nEvents*sizeof(uint32_t));
     memcpy(&data.exttimetags, exttimetags.data(), nEvents*sizeof(uint16_t));
 
-    exttimetags.erase(exttimetags.begin(), exttimetags.begin() + nEvents);
-    timetags.erase(timetags.begin(), timetags.begin() + nEvents);
-    counters.erase(counters.begin(), counters.begin() + nEvents);
+    exttimetags.clear();
+    timetags.clear();
+    counters.clear();
 
     for (size_t i = 0; i < nsamples.size(); i++) {
         DigitizerData::ChannelData& ch = data.channels[i];

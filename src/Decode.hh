@@ -63,7 +63,6 @@ void *decode_thread(void *_data) {
                 Exception::dontPrint();
                 
                 string fname = data->runtype->fname() + ".h5"; 
-                cout << "Saving data to " << fname << endl;
                 
                 H5File file(fname, H5F_ACC_TRUNC);
                 data->runtype->write(file);

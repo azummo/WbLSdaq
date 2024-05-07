@@ -25,7 +25,7 @@ NetDispatcher::NetDispatcher(size_t _nEvents,
   memset(&hints, 0, sizeof hints);
   hints.ai_family = PF_INET;
   hints.ai_socktype = SOCK_STREAM;
-  getaddrinfo(address.c_str(), sport, &hints, &res);  // FIXME from config
+  getaddrinfo(address.c_str(), sport, &hints, &res);
   
   if ((sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) == -1) {
     perror("client: socket");
@@ -63,7 +63,6 @@ void NetDispatcher::Dispatch(vector<Buffer*>& buffers){
   for (size_t i=0; i<this->decoders.size(); i++) {
     this->decoders[i]->pack(&data, this->evtsReady[i]);
 
-    printf("sizeof(DigitizerData) = %li\n", sizeof(DigitizerData));
     int len = sizeof(DigitizerData);
     int total = 0;
     int bytesleft = len;
@@ -73,10 +72,8 @@ void NetDispatcher::Dispatch(vector<Buffer*>& buffers){
     meta.packet_type = 3;
     meta.len = len;
     n = send(sockfd, &meta, sizeof(NetMeta), 0);
-    printf("n=%i, size=%i\n", n, sizeof(NetMeta));
     while(total < len) {
         n = send(sockfd, &data+total, bytesleft, 0);
-        printf("sent %i of %i\n", n, len);
         if (n == -1) {
           perror("client: send");
           break;
