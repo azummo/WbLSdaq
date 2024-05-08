@@ -590,6 +590,7 @@ uint32_t* V1730Decoder::decode_board_agg(uint32_t *boardagg) {
 void V1730Decoder::pack(DigitizerData* ddd, size_t nEvents) {
     DigitizerData& data = *ddd;
     data.nEvents = nEvents;
+    snprintf(data.name, 50, "%s", settings.getIndex().c_str());
     data.type = 0xcd;
     data.bits = 14;
     data.ns_sample = 2.0;

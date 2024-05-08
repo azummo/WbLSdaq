@@ -288,8 +288,8 @@ void *readout(void *_data){
     }
     else if (dispstr == "tcp"){
         int nEvents = run["events"].cast<int>();
-	std::string address = run["address"].cast<string>();
-        std::string port = run["port"].cast<string>();
+	std::string address = disptbl["address"].cast<string>();
+        std::string port = disptbl["port"].cast<string>();
         dispatcher = new TCPDispatcher(nEvents, address, port, decoders);
     }
     if (!dispatcher){
