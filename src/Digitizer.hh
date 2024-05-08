@@ -76,29 +76,6 @@ inline void writeall(const int fd, const void *ptr, int len) {
     }
 }
 
-typedef struct DigitizerData {
-  typedef struct ChannelData {
-    uint32_t chID;
-    uint32_t offset;
-    uint32_t threshold;
-    float dynamic_range;
-    uint16_t samples[20][500];
-    uint16_t patterns[20];
-  } ChannelData;
-
-  uint16_t type;
-  char name[50];
-  uint16_t bits;
-  uint16_t samples;
-  uint16_t nEvents;
-  float ns_sample;
-  uint32_t counters[20];
-  uint32_t timetags[20];
-  uint16_t exttimetags[20];
-
-  ChannelData channels[16];
-} DigitizerData;
-
 class Decoder {
     
     public:
@@ -111,8 +88,6 @@ class Decoder {
         virtual void writeOut(H5::H5File &file, size_t nEvents) = 0;
 
         virtual DigitizerSettings* getSettings() { return nullptr; }
-
-        virtual void pack(DigitizerData* data, size_t nEvents) {}
 };
 
 #endif

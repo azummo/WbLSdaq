@@ -240,6 +240,8 @@ class V1730 : public Digitizer {
 class V1730Decoder : public Decoder {
 
     public: 
+
+        friend class TCPDispatcher;
     
         V1730Decoder(size_t eventBuffer, V1730Settings &settings);
         
@@ -252,8 +254,6 @@ class V1730Decoder : public Decoder {
         virtual void writeOut(H5::H5File &file, size_t nEvents);
         
         virtual DigitizerSettings* getSettings() { return &settings; }
-
-        virtual void pack(DigitizerData* data, size_t nEvents);
 
     protected:
         

@@ -28,7 +28,6 @@ class LegacyHDF5Dispatcher: public Dispatcher{
 
     string basename;
     vector<Decoder*> decoders;
-    DigitizerData data;
 };
 
 #endif

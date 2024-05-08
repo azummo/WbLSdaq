@@ -412,7 +412,7 @@ size_t V1730Decoder::eventsReady() {
 
 using namespace H5;
 
-//MBS: Revert to Ed's writeOut function due to issues with DigitizerData struct
+
 void V1730Decoder::writeOut(H5File &file, size_t nEvents) {
 
     Group cardgroup = file.createGroup("/"+settings.getIndex());
@@ -584,40 +584,5 @@ uint32_t* V1730Decoder::decode_board_agg(uint32_t *boardagg) {
     }
 
     return boardagg+size;
-}
-
-// Not used? TBK
-void V1730Decoder::pack(DigitizerData* ddd, size_t nEvents) {
-    DigitizerData& data = *ddd;
-    data.nEvents = nEvents;
-    snprintf(data.name, 50, "%s", settings.getIndex().c_str());
-    data.type = 0xcd;
-    data.bits = 14;
-    data.ns_sample = 2.0;
-    data.samples = static_cast<uint32_t>(settings.getRecordLength());
-
-    memcpy(&data.counters, counters.data(), nEvents*sizeof(uint32_t));
-    memcpy(&data.timetags, timetags.data(), nEvents*sizeof(uint32_t));
-    memcpy(&data.exttimetags, exttimetags.data(), nEvents*sizeof(uint16_t));
-
-    exttimetags.clear();
-    timetags.clear();
-    counters.clear();
-
-    for (size_t i = 0; i < nsamples.size(); i++) {
-        DigitizerData::ChannelData& ch = data.channels[i];
-        ch.chID = idx2chan[i];
-        ch.offset = settings.getDCOffset(idx2chan[i]);
-        ch.threshold = settings.getThreshold(idx2chan[i]);
-        ch.dynamic_range = settings.getDynamicRange(idx2chan[i]);
-
-        memcpy(ch.samples, grabs[i], nsamples[i]*sizeof(uint16_t)*nEvents);
-        memmove(grabs[i],grabs[i]+nEvents*nsamples[i],nsamples[i]*sizeof(uint16_t)*(grabbed[i]-nEvents));
-
-        memcpy(ch.patterns, patterns[i], sizeof(uint16_t)*nEvents);
-        memmove(patterns[i],patterns[i]+nEvents,sizeof(uint16_t)*(grabbed[i]-nEvents));
-
-        grabbed[i] -= nEvents;
-    }
 }
 
