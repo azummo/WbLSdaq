@@ -10,7 +10,6 @@
 #include <VMEBridge.hh>
 #include <Dispatcher.hh>
 #include <TCPDispatcher.hh>
-#include <ZMQDispatcher.hh>
 #include <NetDispatcher.hh>
 #include <LegacyHDF5Dispatcher.hh>
 #include <SocketDispatcher.hh>
@@ -274,11 +273,6 @@ void *readout(void *_data){
         int nEvents = run["events"].cast<int>();
         string path = run["outfile"].cast<string>();
         dispatcher = new SocketDispatcher(nEvents, path, buffers.size());
-    }
-    else if (dispstr == "zmq"){
-        int nEvents = run["events"].cast<int>();
-        string address = disptbl["address"].cast<string>();
-        dispatcher = new ZMQDispatcher(nEvents, address, decoders);
     }
     else if (dispstr == "net"){
         int nEvents = run["events"].cast<int>();
