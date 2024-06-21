@@ -11,7 +11,7 @@ typedef struct DigitizerData {
     uint32_t offset;
     uint32_t threshold;
     float dynamic_range;
-    uint16_t samples[20][500];
+    uint16_t samples[20][200];
     uint16_t patterns[20];
   } ChannelData;
 

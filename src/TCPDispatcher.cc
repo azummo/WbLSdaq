@@ -56,79 +56,91 @@ size_t TCPDispatcher::Digest(vector<Buffer*>& buffers){
 
 void TCPDispatcher::Dispatch(vector<Buffer*>& buffers){
   last_time = cur_time;
-    
   for (size_t i=0; i<this->decoders.size(); i++) {
     V1730Decoder& decoder = *((V1730Decoder*) this->decoders[i]);  // Caution!
     V1730Settings& settings = *((V1730Settings*) decoder.getSettings());  // Caution!
 
     // Pack intro struct
-    size_t nEvents = this->evtsReady[i];
 
-    data.nEvents = nEvents;
-    snprintf(data.name, 50, "%s", settings.getIndex().c_str());
-    data.type = 0xcd;
-    data.bits = 14;
-    data.ns_sample = 2.0;
-    data.samples = static_cast<uint32_t>(settings.getRecordLength());
+    size_t eventsRemaining = this->evtsReady[i];
+    size_t totalEvents = eventsRemaining;
+    while(eventsRemaining)
+    {
+      size_t nEvents;
+      if(eventsRemaining > 20) nEvents = 20;
+      else nEvents = eventsRemaining;
 
-    memcpy(&data.counters, decoder.counters.data(), nEvents*sizeof(uint32_t));
-    memcpy(&data.timetags, decoder.timetags.data(), nEvents*sizeof(uint32_t));
-    memcpy(&data.exttimetags, decoder.exttimetags.data(), nEvents*sizeof(uint16_t));
+      size_t ev = totalEvents-eventsRemaining;
+
+      data.nEvents = nEvents;
+      snprintf(data.name, 50, "%s", settings.getIndex().c_str());
+      data.type = 0xcd;
+      data.bits = 14;
+      data.ns_sample = 2.0;
+      data.samples = static_cast<uint32_t>(settings.getRecordLength());
+
+      memcpy(&data.counters, &decoder.counters[ev], nEvents*sizeof(uint32_t));
+      memcpy(&data.timetags, &decoder.timetags[ev], nEvents*sizeof(uint32_t));
+      memcpy(&data.exttimetags, &decoder.exttimetags[ev], nEvents*sizeof(uint16_t));
+
+      for (size_t i=0; i<decoder.nsamples.size(); i++) {
+        DigitizerData::ChannelData& ch = data.channels[i];
+        ch.chID = decoder.idx2chan[i];
+        ch.offset = settings.getDCOffset(decoder.idx2chan[i]);
+        ch.threshold = settings.getThreshold(decoder.idx2chan[i]);
+        ch.dynamic_range = settings.getDynamicRange(decoder.idx2chan[i]);
+
+        for (size_t ev=totalEvents-eventsRemaining; ev<nEvents; ev++) {
+          memcpy(ch.samples[ev],
+                 decoder.grabs[i]+ev*decoder.nsamples[i],
+                 decoder.nsamples[i]*sizeof(uint16_t));
+          }
+
+        memcpy(ch.patterns,
+               decoder.patterns[i],
+               sizeof(uint16_t)*nEvents);
+        }
+
+      // Send on socket
+      int len = sizeof(DigitizerData);
+      int total = 0;
+      int bytesleft = len;
+      int n;
+
+      uint16_t header[2];
+      header[0] = 3;  // Packet type
+      header[1] = len;
+      n = send(sockfd, &header, sizeof(header), 0);
+
+      while(total < len) {
+          n = send(sockfd, &data+total, bytesleft, 0);
+          if (n == -1) {
+            perror("TCPDispatcher: Error: client: send");
+            break;
+          }
+          total += n;
+          bytesleft -= n;
+      }
+      assert(total == len);
+      eventsRemaining-=nEvents;
+    }  
 
     decoder.exttimetags.clear();
     decoder.timetags.clear();
     decoder.counters.clear();
-
     for (size_t i=0; i<decoder.nsamples.size(); i++) {
-      DigitizerData::ChannelData& ch = data.channels[i];
-      ch.chID = decoder.idx2chan[i];
-      ch.offset = settings.getDCOffset(decoder.idx2chan[i]);
-      ch.threshold = settings.getThreshold(decoder.idx2chan[i]);
-      ch.dynamic_range = settings.getDynamicRange(decoder.idx2chan[i]);
-
-      memcpy(ch.samples,
-             decoder.grabs[i],
-             decoder.nsamples[i]*sizeof(uint16_t)*nEvents);
 
       memmove(decoder.grabs[i],
-              decoder.grabs[i]+nEvents*decoder.nsamples[i],
-              decoder.nsamples[i]*sizeof(uint16_t)*(decoder.grabbed[i]-nEvents));
-
-      memcpy(ch.patterns,
-             decoder.patterns[i],
-             sizeof(uint16_t)*nEvents);
+              decoder.grabs[i]+totalEvents*decoder.nsamples[i],
+              decoder.nsamples[i]*sizeof(uint16_t)*(decoder.grabbed[i]-totalEvents));
 
       memmove(decoder.patterns[i],
-              decoder.patterns[i]+nEvents,
-              sizeof(uint16_t)*(decoder.grabbed[i]-nEvents));
+              decoder.patterns[i]+totalEvents,
+              sizeof(uint16_t)*(decoder.grabbed[i]-totalEvents));
 
-      decoder.grabbed[i] -= nEvents;
+      decoder.grabbed[i] -= totalEvents;
     }
-
-    // Send on socket
-    int len = sizeof(DigitizerData);
-    int total = 0;
-    int bytesleft = len;
-    int n;
-
-    uint16_t header[2];
-    header[0] = 3;  // Packet type
-    header[1] = len;
-    n = send(sockfd, &header, sizeof(header), 0);
-
-    while(total < len) {
-        n = send(sockfd, &data+total, bytesleft, 0);
-        if (n == -1) {
-          perror("TCPDispatcher: Error: client: send");
-          break;
-        }
-        total += n;
-        bytesleft -= n;
-    }
-
-    assert(total == len);
   }
-
   this->curCycle++;
 }
 
