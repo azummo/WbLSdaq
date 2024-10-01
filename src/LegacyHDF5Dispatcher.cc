@@ -56,8 +56,23 @@ void LegacyHDF5Dispatcher::Dispatch(vector<Buffer*>& buffers){
                                                PredType::NATIVE_INT,scalar);
     timestamp.write(PredType::NATIVE_INT, &epochtime);
 
+    unsigned int minEvtsReady = 999999;
+    unsigned int maxEvtsReady = 0;
     for (size_t i = 0; i < this->decoders.size(); i++) {
-        decoders[i]->writeOut(file, evtsReady[i]);
+        if(evtsReady[i] < minEvtsReady){
+	    minEvtsReady = evtsReady[i];
+	}
+        if(evtsReady[i] > maxEvtsReady){
+	    maxEvtsReady = evtsReady[i];
+	}
+	std::cout << "Board: " << i << " events ready: " << evtsReady[i] << std::endl;
+    }
+
+    std::cout << "Minimum events ready: " << minEvtsReady << std::endl;    
+    std::cout << "Maximum events ready: " << maxEvtsReady << std::endl;    
+
+    for (size_t i = 0; i < this->decoders.size(); i++) {
+        decoders[i]->writeOut(file, minEvtsReady);
     }
 
     this->curCycle++;

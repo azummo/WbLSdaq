@@ -445,8 +445,6 @@ void V1730Decoder::writeOut(H5File &file, size_t nEvents) {
     DataSet exttimetags_ds = cardgroup.createDataSet("exttimetags", PredType::NATIVE_UINT16, space);
     exttimetags_ds.write(exttimetags.data(), PredType::NATIVE_UINT16);
 
-    std::cout << "Event count: " << counters.size() << std::endl; 
-
     for (size_t i = 0; i < nsamples.size(); i++) {
 
         string chname = "ch" + to_string(idx2chan[i]);
@@ -489,9 +487,9 @@ void V1730Decoder::writeOut(H5File &file, size_t nEvents) {
         grabbed[i] -= nEvents;
     }
 
-    timetags.clear();
-    exttimetags.clear();
-    counters.clear();
+    timetags.erase(timetags.begin(), timetags.begin() + nEvents);
+    exttimetags.erase(exttimetags.begin(), exttimetags.begin() + nEvents);
+    counters.erase(counters.begin(), counters.begin() + nEvents);
 
     dispatch_index -= nEvents;
     if (dispatch_index < 0) dispatch_index = 0;
