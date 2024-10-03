@@ -1,23 +1,32 @@
-
 {
 // Run settings
 name: "RUN",
-run_number: 0,
-outfile: "/home/eos/data/water_fill/muons1/muons1",
+outfile: "/mnt/raid/data/water_fill/deployed_source/ambe/run582/eos_data-deployed_source-ambe-run-582",
 runtype: "nevents",
-events: 1700,
-repeat_times: 100,
-event_buffer_size: 1000,
+events: 85000,
+repeat_times: 6000,
+event_buffer_size: 10000,
 check_temps_every: 100,
 soft_trig: [],
+run_number: 673,
+run_type: 0,
+source_type: 0,
+source_x: 0.000,
+source_y: 0.000,
+source_z: 0.000,
+source_theta: 0.000,
+source_phi: 0.000,
 fiber_number: 0,
-run_type: 0
+laserball_size: 0, 
+laser_wavelength: 0.0,
 }
 
 {
 name: "Dispatch",
 index: "",
-type: "legacy_hdf5"
+dispatch_type: "legacy_hdf5"
+address: "192.168.1.144",// "192.168.1.245"(eos-data), "192.168.1.144"(eos-daq)
+port: "8765"
 }
 
 {
@@ -53,8 +62,8 @@ name: "V1730",                  // V1730 global settings
 index: "19857",             // To match card to subtables, data storage
 communication: "optical-link-0",  // channel through which to access board
 base_address: 0,         // node # in CONET network
-record_length: 150,     // # of samples per waveform
-post_trigger: 2, // wait this number * 8 samples before freezing current buffer
+record_length: 110,     // # of samples per waveform
+post_trigger: 5, // wait this number * 8 samples before freezing current buffer
 buffer_size: 20,                // Readout circular buffer size in MiB
 coincidence_window: 0,          // time window for majority coincidence is this number * 8 ns
 global_majority_level: 0,       // this number + 1 requests required for global trigger
@@ -308,8 +317,8 @@ name: "V1730",                  // V1730 global settings
 index: "19858",             // To match card to subtables, data storage
 communication: "optical-link-0",  // channel through which to access board
 base_address: 1,         // node # in CONET network
-record_length: 150,     // # of samples per waveform
-post_trigger: 2, // wait this number * 8 samples before freezing current buffer
+record_length: 110,     // # of samples per waveform
+post_trigger: 5, // wait this number * 8 samples before freezing current buffer
 buffer_size: 20,                // Readout circular buffer size in MiB
 coincidence_window: 0,          // time window for majority coincidence is this number * 8 ns
 global_majority_level: 0,       // this number + 1 requests required for global trigger
@@ -563,8 +572,8 @@ name: "V1730",                  // V1730 global settings
 index: "24190",             // To match card to subtables, data storage
 communication: "optical-link-0",  // channel through which to access board
 base_address: 2,         // node # in CONET network
-record_length: 150,     // # of samples per waveform
-post_trigger: 2, // wait this number * 8 samples before freezing current buffer
+record_length: 110,     // # of samples per waveform
+post_trigger: 5, // wait this number * 8 samples before freezing current buffer
 buffer_size: 20,                // Readout circular buffer size in MiB
 coincidence_window: 0,          // time window for majority coincidence is this number * 8 ns
 global_majority_level: 0,       // this number + 1 requests required for global trigger
@@ -818,8 +827,8 @@ name: "V1730",                  // V1730 global settings
 index: "24191",             // To match card to subtables, data storage
 communication: "optical-link-0",  // channel through which to access board
 base_address: 3,         // node # in CONET network
-record_length: 150,     // # of samples per waveform
-post_trigger: 2, // wait this number * 8 samples before freezing current buffer
+record_length: 110,     // # of samples per waveform
+post_trigger: 5, // wait this number * 8 samples before freezing current buffer
 buffer_size: 20,                // Readout circular buffer size in MiB
 coincidence_window: 0,          // time window for majority coincidence is this number * 8 ns
 global_majority_level: 0,       // this number + 1 requests required for global trigger
@@ -1073,8 +1082,8 @@ name: "V1730",                  // V1730 global settings
 index: "24192",             // To match card to subtables, data storage
 communication: "optical-link-0",  // channel through which to access board
 base_address: 4,         // node # in CONET network
-record_length: 150,     // # of samples per waveform
-post_trigger: 2, // wait this number * 8 samples before freezing current buffer
+record_length: 110,     // # of samples per waveform
+post_trigger: 5, // wait this number * 8 samples before freezing current buffer
 buffer_size: 20,                // Readout circular buffer size in MiB
 coincidence_window: 0,          // time window for majority coincidence is this number * 8 ns
 global_majority_level: 0,       // this number + 1 requests required for global trigger
@@ -1328,8 +1337,8 @@ name: "V1730",                  // V1730 global settings
 index: "24193",             // To match card to subtables, data storage
 communication: "optical-link-1",  // channel through which to access board
 base_address: 0,         // node # in CONET network
-record_length: 150,     // # of samples per waveform
-post_trigger: 2, // wait this number * 8 samples before freezing current buffer
+record_length: 110,     // # of samples per waveform
+post_trigger: 5, // wait this number * 8 samples before freezing current buffer
 buffer_size: 20,                // Readout circular buffer size in MiB
 coincidence_window: 0,          // time window for majority coincidence is this number * 8 ns
 global_majority_level: 0,       // this number + 1 requests required for global trigger
@@ -1583,8 +1592,8 @@ name: "V1730",                  // V1730 global settings
 index: "24194",             // To match card to subtables, data storage
 communication: "optical-link-1",  // channel through which to access board
 base_address: 1,         // node # in CONET network
-record_length: 150,     // # of samples per waveform
-post_trigger: 2, // wait this number * 8 samples before freezing current buffer
+record_length: 110,     // # of samples per waveform
+post_trigger: 5, // wait this number * 8 samples before freezing current buffer
 buffer_size: 20,                // Readout circular buffer size in MiB
 coincidence_window: 0,          // time window for majority coincidence is this number * 8 ns
 global_majority_level: 0,       // this number + 1 requests required for global trigger
@@ -1838,8 +1847,8 @@ name: "V1730",                  // V1730 global settings
 index: "24195",             // To match card to subtables, data storage
 communication: "optical-link-1",  // channel through which to access board
 base_address: 2,         // node # in CONET network
-record_length: 150,     // # of samples per waveform
-post_trigger: 2, // wait this number * 8 samples before freezing current buffer
+record_length: 110,     // # of samples per waveform
+post_trigger: 5, // wait this number * 8 samples before freezing current buffer
 buffer_size: 20,                // Readout circular buffer size in MiB
 coincidence_window: 0,          // time window for majority coincidence is this number * 8 ns
 global_majority_level: 0,       // this number + 1 requests required for global trigger
@@ -2093,8 +2102,8 @@ name: "V1730",                  // V1730 global settings
 index: "24196",             // To match card to subtables, data storage
 communication: "optical-link-1",  // channel through which to access board
 base_address: 3,         // node # in CONET network
-record_length: 150,     // # of samples per waveform
-post_trigger: 2, // wait this number * 8 samples before freezing current buffer
+record_length: 110,     // # of samples per waveform
+post_trigger: 5, // wait this number * 8 samples before freezing current buffer
 buffer_size: 20,                // Readout circular buffer size in MiB
 coincidence_window: 0,          // time window for majority coincidence is this number * 8 ns
 global_majority_level: 0,       // this number + 1 requests required for global trigger
@@ -2348,8 +2357,8 @@ name: "V1730",                  // V1730 global settings
 index: "24305",             // To match card to subtables, data storage
 communication: "optical-link-2",  // channel through which to access board
 base_address: 0,         // node # in CONET network
-record_length: 150,     // # of samples per waveform
-post_trigger: 2, // wait this number * 8 samples before freezing current buffer
+record_length: 110,     // # of samples per waveform
+post_trigger: 5, // wait this number * 8 samples before freezing current buffer
 buffer_size: 20,                // Readout circular buffer size in MiB
 coincidence_window: 0,          // time window for majority coincidence is this number * 8 ns
 global_majority_level: 0,       // this number + 1 requests required for global trigger
@@ -2603,8 +2612,8 @@ name: "V1730",                  // V1730 global settings
 index: "24306",             // To match card to subtables, data storage
 communication: "optical-link-2",  // channel through which to access board
 base_address: 1,         // node # in CONET network
-record_length: 150,     // # of samples per waveform
-post_trigger: 2, // wait this number * 8 samples before freezing current buffer
+record_length: 110,     // # of samples per waveform
+post_trigger: 5, // wait this number * 8 samples before freezing current buffer
 buffer_size: 20,                // Readout circular buffer size in MiB
 coincidence_window: 0,          // time window for majority coincidence is this number * 8 ns
 global_majority_level: 0,       // this number + 1 requests required for global trigger
@@ -2858,8 +2867,8 @@ name: "V1730",                  // V1730 global settings
 index: "24307",             // To match card to subtables, data storage
 communication: "optical-link-2",  // channel through which to access board
 base_address: 2,         // node # in CONET network
-record_length: 150,     // # of samples per waveform
-post_trigger: 2, // wait this number * 8 samples before freezing current buffer
+record_length: 110,     // # of samples per waveform
+post_trigger: 5, // wait this number * 8 samples before freezing current buffer
 buffer_size: 20,                // Readout circular buffer size in MiB
 coincidence_window: 0,          // time window for majority coincidence is this number * 8 ns
 global_majority_level: 0,       // this number + 1 requests required for global trigger
@@ -3113,8 +3122,8 @@ name: "V1730",                  // V1730 global settings
 index: "24308",             // To match card to subtables, data storage
 communication: "optical-link-2",  // channel through which to access board
 base_address: 3,         // node # in CONET network
-record_length: 150,     // # of samples per waveform
-post_trigger: 2, // wait this number * 8 samples before freezing current buffer
+record_length: 110,     // # of samples per waveform
+post_trigger: 5, // wait this number * 8 samples before freezing current buffer
 buffer_size: 20,                // Readout circular buffer size in MiB
 coincidence_window: 0,          // time window for majority coincidence is this number * 8 ns
 global_majority_level: 0,       // this number + 1 requests required for global trigger
@@ -3368,8 +3377,8 @@ name: "V1730",                  // V1730 global settings
 index: "24309",             // To match card to subtables, data storage
 communication: "optical-link-3",  // channel through which to access board
 base_address: 0,         // node # in CONET network
-record_length: 150,     // # of samples per waveform
-post_trigger: 2, // wait this number * 8 samples before freezing current buffer
+record_length: 110,     // # of samples per waveform
+post_trigger: 5, // wait this number * 8 samples before freezing current buffer
 buffer_size: 20,                // Readout circular buffer size in MiB
 coincidence_window: 0,          // time window for majority coincidence is this number * 8 ns
 global_majority_level: 0,       // this number + 1 requests required for global trigger
@@ -3623,8 +3632,8 @@ name: "V1730",                  // V1730 global settings
 index: "24310",             // To match card to subtables, data storage
 communication: "optical-link-3",  // channel through which to access board
 base_address: 1,         // node # in CONET network
-record_length: 150,     // # of samples per waveform
-post_trigger: 2, // wait this number * 8 samples before freezing current buffer
+record_length: 110,     // # of samples per waveform
+post_trigger: 5, // wait this number * 8 samples before freezing current buffer
 buffer_size: 20,                // Readout circular buffer size in MiB
 coincidence_window: 0,          // time window for majority coincidence is this number * 8 ns
 global_majority_level: 0,       // this number + 1 requests required for global trigger
@@ -3878,8 +3887,8 @@ name: "V1730",                  // V1730 global settings
 index: "24311",             // To match card to subtables, data storage
 communication: "optical-link-3",  // channel through which to access board
 base_address: 2,         // node # in CONET network
-record_length: 150,     // # of samples per waveform
-post_trigger: 2, // wait this number * 8 samples before freezing current buffer
+record_length: 110,     // # of samples per waveform
+post_trigger: 5, // wait this number * 8 samples before freezing current buffer
 buffer_size: 20,                // Readout circular buffer size in MiB
 coincidence_window: 0,          // time window for majority coincidence is this number * 8 ns
 global_majority_level: 0,       // this number + 1 requests required for global trigger
@@ -4133,8 +4142,8 @@ name: "V1730",                  // V1730 global settings
 index: "24312",             // To match card to subtables, data storage
 communication: "optical-link-3",  // channel through which to access board
 base_address: 3,         // node # in CONET network
-record_length: 150,     // # of samples per waveform
-post_trigger: 2, // wait this number * 8 samples before freezing current buffer
+record_length: 110,     // # of samples per waveform
+post_trigger: 5, // wait this number * 8 samples before freezing current buffer
 buffer_size: 20,                // Readout circular buffer size in MiB
 coincidence_window: 0,          // time window for majority coincidence is this number * 8 ns
 global_majority_level: 0,       // this number + 1 requests required for global trigger

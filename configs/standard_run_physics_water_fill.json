@@ -1,25 +1,32 @@
 {
 // Run settings
 name: "RUN",
-run_number: 4,
-outfile: "/home/eos/testtest",
-runtype: "manual",
-events: 5,
-repeat_times: 4000,
-event_buffer_size: 20,
+outfile: "/home/eos/data/water_fill/diagnostic/",
+runtype: "nevents",
+events: 1700,
+repeat_times: 100,
+event_buffer_size: 1000,
 check_temps_every: 100,
 soft_trig: [],
-fiber_number: 45,
-fiber_intensity: 1.0,
-run_type: 2,
-address: "192.168.1.144",
-port: "8765"
+run_number: 673,
+run_type: 0,
+source_type: 0,
+source_x: 0.000,
+source_y: 0.000,
+source_z: 0.000,
+source_theta: 0.000,
+source_phi: 0.000,
+fiber_number: 0,
+laserball_size: 0, 
+laser_wavelength: 0.0,
 }
 
 {
 name: "Dispatch",
 index: "",
-type: "tcp"
+dispatch_type: "legacy_hdf5"
+address: "192.168.1.144",// "192.168.1.245"(eos-data), "192.168.1.144"(eos-daq)
+port: "8765"
 }
 
 {
