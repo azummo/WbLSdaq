@@ -16,11 +16,11 @@
 TCPDispatcher::TCPDispatcher(size_t _nEvents,
                              std::string _address,
                              std::string _port,
-			     int _runNumber,
+			     RunStart _rs,
                              vector<Decoder*> _decoders)
     : Dispatcher(_nEvents, _decoders.size()),
       address(_address), port(_port),
-      runNumber(_runNumber), decoders(_decoders) {
+      rs(_rs), decoders(_decoders) {
   struct addrinfo hints, *res;
   memset(&hints, 0, sizeof hints);
   hints.ai_family = AF_UNSPEC;
@@ -34,9 +34,8 @@ TCPDispatcher::TCPDispatcher(size_t _nEvents,
            _address.c_str(), _port.c_str());
     pthread_exit(NULL);
   }
-  rs.run_id = runNumber;
   rs.first_event_id = 0;
-  re.run_id = runNumber;
+  printf("TCPDispatcher: Starting Run Number %i\n", rs.run_number);
 
   // Send on socket
   Send(&rs, sizeof(RunStart), RUN_START_PACKET);
@@ -121,7 +120,7 @@ if(nEvents>0)    std::cout << "nEvents, first key: " << nEvents << ", " << *deco
         }
 
      // Send on socket
-      Send(&data, sizeof(DigitizerData), DETECTOR_EVENT);
+      Send(&data, sizeof(DigitizerData), DAQ_PACKET);
 
 /*
      if(i==0 && strcmp(settings.getIndex().c_str(),"19857")==0)
