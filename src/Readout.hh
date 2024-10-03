@@ -277,8 +277,20 @@ void *readout(void *_data){
         int nEvents = run["events"].cast<int>();
 	std::string address = disptbl["address"].cast<string>();
         std::string port = disptbl["port"].cast<string>();
-        int run_number = run["run_number"].cast<int>();
-        dispatcher = new TCPDispatcher(nEvents, address, port, run_number, decoders);
+        RunStart rs;
+        rs.run_number = run["run_number"].cast<int>();
+        strcpy(rs.outfile, run["outfile"].cast<string>().c_str());
+        rs.run_type = run["run_type"].cast<int>();
+        rs.source_type = run["source_type"].cast<int>();
+        rs.source_x = run["source_x"].cast<double>();
+        rs.source_y = run["source_y"].cast<double>();
+        rs.source_z = run["source_z"].cast<double>();
+        rs.source_theta = run["source_theta"].cast<double>();
+        rs.source_phi = run["source_phi"].cast<double>();
+        rs.fiber_number = run["fiber_number"].cast<int>();
+        rs.laserball_size = run["laserball_size"].cast<double>();
+        rs.laser_wavelength = run["laser_wavelength"].cast<double>();
+        dispatcher = new TCPDispatcher(nEvents, address, port, rs, decoders);
     }
     if (!dispatcher){
         cerr << "error: dispatcher type "

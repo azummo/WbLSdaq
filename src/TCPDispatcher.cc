@@ -16,11 +16,11 @@
 TCPDispatcher::TCPDispatcher(size_t _nEvents,
                              std::string _address,
                              std::string _port,
-			     int _runNumber,
+			     RunStart _rs,
                              vector<Decoder*> _decoders)
     : Dispatcher(_nEvents, _decoders.size()),
       address(_address), port(_port),
-      runNumber(_runNumber), decoders(_decoders) {
+      rs(_rs), decoders(_decoders) {
   struct addrinfo hints, *res;
   memset(&hints, 0, sizeof hints);
   hints.ai_family = AF_UNSPEC;
@@ -34,9 +34,8 @@ TCPDispatcher::TCPDispatcher(size_t _nEvents,
            _address.c_str(), _port.c_str());
     pthread_exit(NULL);
   }
-  rs.run_id = runNumber;
   rs.first_event_id = 0;
-  re.run_id = runNumber;
+  printf("TCPDispatcher: Starting Run Number %i\n", rs.run_number);
 
   // Send on socket
   Send(&rs, sizeof(RunStart), RUN_START_PACKET);
@@ -80,9 +79,8 @@ void TCPDispatcher::Dispatch(vector<Buffer*>& buffers){
     // Pack intro struct
 
     size_t eventsRemaining = this->evtsReady[i];
-    if(eventsRemaining==0) continue;
     size_t totalEvents = eventsRemaining;
-if(nEvents>1)  std::cout << "Events Remaining: " << eventsRemaining << std::endl;
+if(nEvents>1)    std::cout << "Events Remaining: " << eventsRemaining << std::endl;
 //    while(eventsRemaining)
 //    {
       size_t nEvents;
@@ -121,10 +119,10 @@ if(nEvents>0)    std::cout << "nEvents, first key: " << nEvents << ", " << *deco
                sizeof(uint16_t)*nEvents);
         }
 
-      // Send on socket
-//      Send(&data, sizeof(DigitizerData), DAQ_PACKET);
+     // Send on socket
+      Send(&data, sizeof(DigitizerData), DAQ_PACKET);
 
-
+/*
      if(i==0 && strcmp(settings.getIndex().c_str(),"19857")==0)
      {
        for(size_t j=0; j<nEvents; j++)
@@ -142,6 +140,7 @@ if(nEvents>0)    std::cout << "nEvents, first key: " << nEvents << ", " << *deco
       header[0] = 3;  // Packet type
       header[1] = len;
       n = send(sockfd, &header, sizeof(header), 0);
+
       while(total < len) {
           n = send(sockfd, &data+total, bytesleft, 0);
           if (n == -1) {
@@ -151,13 +150,13 @@ if(nEvents>0)    std::cout << "nEvents, first key: " << nEvents << ", " << *deco
           total += n;
           bytesleft -= n;
       }
-//if(nEvents>0)   std::cout << "Wrote out " << total << "/" << len << " bytes" << std::endl;
+if(nEvents>0)    std::cout << "Wrote out " << total << "/" << len << " bytes" << std::endl;
       assert(total == len);
-
+*/
       eventsRemaining-=nEvents;
-    std::cout << "Events Remaining: " << eventsRemaining << std::endl;
+if(nEvents>1)    std::cout << "Events Remaining: " << eventsRemaining << std::endl;
 
-//    last_timestamp = ((uint64_t)decoder.exttimetags.begin()+nEvents << 32) | decoder.timetags.begin()+nEvents;
+//    last_timestamp = ((uint64_t)decoder.exttimetags.back() << 32) | decoder.timetags.back();
 
     decoder.exttimetags.erase(decoder.exttimetags.begin(), decoder.exttimetags.begin()+nEvents);
     decoder.timetags.erase(decoder.timetags.begin(), decoder.timetags.begin()+nEvents);
@@ -190,7 +189,7 @@ void TCPDispatcher::Send(void* data, int len, int type){
   uint16_t header[2];
   header[0] = type;  // Packet type
   header[1] = len;
-  std::cout << "Sending Packet type: " << header[0] << std::endl;
+//  std::cout << "Sending Packet type: " << header[0] << std::endl;
   n = send(sockfd, &header, sizeof(header), 0);
 
   while(total < len) {

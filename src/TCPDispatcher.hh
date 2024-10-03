@@ -31,12 +31,19 @@ typedef struct DigitizerData {
 
 typedef struct {
   uint32_t type;
-  uint32_t date;
-  uint32_t time;
-  uint32_t daq_ver;
-  uint32_t runmask;
+  uint32_t run_number;
+  char outfile[200];
+  uint32_t run_type;
+  uint32_t source_type;
+  float source_x;
+  float source_y;
+  float source_z;
+  float source_theta;
+  float source_phi;
+  int fiber_number;
+  float laserball_size;
+  float laser_wavelength;
   uint64_t first_event_id;
-  uint32_t run_id;
 } RunStart;
 
 typedef struct {
@@ -66,7 +73,7 @@ public:
   TCPDispatcher(size_t _nEvents,
                 std::string _address,
                 std::string _port,
-		int _runNumber,
+		RunStart _rs,
                 vector<Decoder*> _decoders);
   virtual ~TCPDispatcher();
 
