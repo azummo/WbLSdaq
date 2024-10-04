@@ -32,7 +32,7 @@ typedef struct DigitizerData {
 typedef struct {
   uint32_t type;
   uint32_t run_number;
-  char outfile[200];
+  char outdir[200];
   uint32_t run_type;
   uint32_t source_type;
   float source_x;

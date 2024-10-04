@@ -279,7 +279,7 @@ void *readout(void *_data){
         std::string port = disptbl["port"].cast<string>();
         RunStart rs;
         rs.run_number = run["run_number"].cast<int>();
-        strcpy(rs.outfile, run["outfile"].cast<string>().c_str());
+        strcpy(rs.outdir, run["outdir"].cast<string>().c_str());
         rs.run_type = run["run_type"].cast<int>();
         rs.source_type = run["source_type"].cast<int>();
         rs.source_x = run["source_x"].cast<double>();
