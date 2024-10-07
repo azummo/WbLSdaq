@@ -64,7 +64,7 @@ size_t TCPDispatcher::Digest(vector<Buffer*>& buffers){
       if (sz > 0) (this->decoders)[i]->decode(*buffers[i]);
       size_t ev = (this->decoders)[i]->eventsReady();
       this->evtsReady[i] = ev;
-      total += ev;
+      total += std::min(ev,(size_t)20);
   }
   return total;
 }

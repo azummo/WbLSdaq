@@ -17,8 +17,7 @@ class RunType {
         virtual void begin() = 0;
         
         //called after data is written to add more data or prepare for next file
-        virtual bool keepgoing() = 0;
-        
+        virtual bool keepgoing(size_t total) = 0;
 };
 
 // Gets fixed numbers of events, optionally splitting into multiple files (repeating)
@@ -42,13 +41,43 @@ class NEventsRun : public RunType {
             clock_gettime(CLOCK_MONOTONIC,&last_time);
         }
 
-        virtual bool keepgoing() {
+        virtual bool keepgoing(size_t total) {
             if (nRepeat > 0) {
                 last_time = cur_time;
                 curCycle++;
                 return curCycle != nRepeat;
             } else {
                 return false;
+            }
+        }
+};
+
+// Gets total numbers of events
+// nTotal is the number of events to grab for all cards (0 for continuious run)
+class TotalEventsRun : public RunType {
+    protected:
+        size_t nEvents, nTotal;
+        struct timespec cur_time, last_time;
+
+    public:
+        TotalEventsRun(size_t _nTotal = 0) :
+            nTotal(_nTotal) { }
+
+        virtual ~TotalEventsRun() {
+            /* */
+        }
+
+        virtual void begin() {
+            clock_gettime(CLOCK_MONOTONIC,&last_time);
+        }
+
+        virtual bool keepgoing(size_t total) {
+            if (nTotal > 0) {
+                last_time = cur_time;
+                nEvents+=total;
+                return nEvents <= nTotal;
+            } else {
+                return true;
             }
         }
 };
@@ -134,7 +163,7 @@ class ManualRun : public RunType {
             clock_gettime(CLOCK_MONOTONIC,&last_time);
         }
 
-        virtual bool keepgoing() {
+        virtual bool keepgoing(size_t total) {
             curCycle++;
             return true;
         }

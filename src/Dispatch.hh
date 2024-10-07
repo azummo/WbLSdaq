@@ -66,7 +66,7 @@ void *dispatch_thread(void *_data) {
                 Exception::dontPrint();
 
                 data->dispatcher->Dispatch(*data->buffers);
-                dispatch_running = data->runtype->keepgoing();
+                dispatch_running = data->runtype->keepgoing(total);
             }
             pthread_mutex_unlock(data->iomutex);
         }
