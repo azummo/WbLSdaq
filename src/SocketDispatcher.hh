@@ -25,6 +25,7 @@ class SocketDispatcher: public Dispatcher{
     size_t Digest(vector<Buffer*>& buffers);
     void Dispatch(vector<Buffer*>& buffers);
     bool Ready();
+    void End() {};
   protected:
     string path;
     int sockfd;

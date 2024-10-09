@@ -48,12 +48,10 @@ typedef struct {
 
 typedef struct {
   uint32_t type;
-  uint32_t date;
-  uint32_t time;
-  uint32_t daq_ver;
-  uint32_t runmask;
+  uint32_t run_number;
   uint64_t last_event_id;
-  uint32_t run_id;
+  char last_board_name[50];
+  uint64_t last_key;
 } RunEnd;
 
 /** Labels for received packet types. */
@@ -93,6 +91,7 @@ protected:
   RunStart rs;
   RunEnd re;
   uint64_t last_timestamp;
+  char last_board_name[50];
   std::vector<Decoder*> decoders;
 };
 

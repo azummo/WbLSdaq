@@ -78,6 +78,7 @@ void *dispatch_thread(void *_data) {
         cout << "Dispatch thread aborted: " << e.what() << endl;
         pthread_mutex_unlock(data->iomutex);
     }
+    data->dispatcher->End();
     pthread_exit(NULL);
 }
 

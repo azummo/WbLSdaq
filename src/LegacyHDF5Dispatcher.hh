@@ -23,6 +23,7 @@ class LegacyHDF5Dispatcher: public Dispatcher{
     string NextPath();
     size_t Digest(vector<Buffer*>& buffers);
     void Dispatch(vector<Buffer*>& buffers);
+    void End() {};
   protected:
     void Initialize(H5File& file);
 

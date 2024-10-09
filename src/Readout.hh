@@ -282,7 +282,7 @@ void *readout(void *_data){
     }
     else if (dispstr == "tcp"){
         int nEvents = run["events"].cast<int>();
-	std::string address = disptbl["address"].cast<string>();
+	std::string address = disptbl["dispatch_address"].cast<string>();
         std::string port = disptbl["port"].cast<string>();
         RunStart rs;
         rs.run_number = run["run_number"].cast<int>();

@@ -19,6 +19,7 @@ class Dispatcher{
     virtual size_t Digest(vector<Buffer*>& buffers) = 0;
     virtual void Dispatch(vector<Buffer*>& buffers) = 0;
     virtual bool Ready(bool &print, string path);
+    virtual void End() {};
   protected:
     size_t curCycle;
     size_t nEvents;
