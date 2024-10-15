@@ -92,6 +92,7 @@ protected:
   RunEnd re;
   uint64_t last_timestamp;
   char last_board_name[50];
+  bool sent;
   std::vector<Decoder*> decoders;
 };
 

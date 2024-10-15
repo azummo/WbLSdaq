@@ -39,7 +39,8 @@ TCPDispatcher::TCPDispatcher(size_t _nEvents,
   printf("TCPDispatcher: Starting Run Number %i\n", rs.run_number);
 
   // Send on socket
-  Send(&rs, sizeof(RunStart), RUN_START_PACKET);
+  sent = Send(&rs, sizeof(RunStart), RUN_START_PACKET);
+  assert(sent);
 }
 
 
@@ -47,7 +48,8 @@ TCPDispatcher::~TCPDispatcher() {
   std::cout << "Closing socket" << std::endl;
   re.last_event_id = last_timestamp;
   strcpy(re.last_board_name, last_board_name);
-  Send(&re, sizeof(RunEnd), RUN_END_PACKET);
+  sent = Send(&re, sizeof(RunEnd), RUN_END_PACKET);
+  assert(sent);
   close(sockfd);
 }
 
@@ -55,7 +57,8 @@ void TCPDispatcher::End() {
   std::cout << "Closing socket" << std::endl;
   re.last_event_id = last_timestamp;
   strcpy(re.last_board_name, last_board_name);
-  Send(&re, sizeof(RunEnd), RUN_END_PACKET);
+  sent = Send(&re, sizeof(RunEnd), RUN_END_PACKET);
+  assert(sent);
   close(sockfd);
 }
 
@@ -124,7 +127,7 @@ void TCPDispatcher::Dispatch(vector<Buffer*>& buffers){
       }
 
     // Send on socket
-    Send(&data, sizeof(DigitizerData), DAQ_PACKET);
+    sent = Send(&data, sizeof(DigitizerData), DAQ_PACKET);
 
     eventsRemaining-=nEvents;
 
@@ -147,11 +150,12 @@ void TCPDispatcher::Dispatch(vector<Buffer*>& buffers){
 
       decoder.grabbed[j] -= nEvents;
     }
+    assert(sent);
   }
   this->curCycle++;
 }
 
-void TCPDispatcher::Send(void* data, int len, int type){
+bool TCPDispatcher::Send(void* data, int len, int type){
 // Send on socket
 
   int total = 0;
@@ -173,7 +177,7 @@ void TCPDispatcher::Send(void* data, int len, int type){
       total += n;
       bytesleft -= n;
   }
-  assert(total == len);
+  return (total == len);
 }
 
 
